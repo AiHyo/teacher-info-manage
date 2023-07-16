@@ -1,9 +1,9 @@
 package com.aih.controller;
 
-import com.aih.common.R;
+import com.aih.utils.vo.R;
 import com.aih.entity.dto.TeacherDto;
-import com.aih.exception.CustomException;
-import com.aih.exception.CustomExceptionCodeMsg;
+import com.aih.utils.CustomException.CustomException;
+import com.aih.utils.CustomException.CustomExceptionCodeMsg;
 import com.aih.entity.Teacher;
 import com.aih.service.ITeacherService;
 import io.swagger.annotations.Api;
@@ -16,10 +16,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 /**
- * <p>
- * 教师(用户) 前端控制器
- * </p>
- *
+ * 教师(用户) Controller
  * @author AiH
  * @since 2023-07-07
  */
@@ -36,10 +33,9 @@ public class TeacherController {
     private PasswordEncoder passwordEncoder;
 
     /**
-     * 教师用户登录
-     * @param teacher
-     * @return  token
+     * 返回包含loginTeacher信息的token,
      */
+    //以及loginTeacher的权限信息
     @ApiOperation("教师用户登录")
     @PostMapping("/login")
     public R<Map<String,Object>> login(@RequestBody Teacher teacher)
@@ -51,6 +47,8 @@ public class TeacherController {
         }
         throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
     }
+
+    //logout还没实现拉黑token
     @ApiOperation("教师用户登出")
     @PostMapping("/logout")
     public R<?> logout(@RequestHeader("token") String token){
@@ -60,22 +58,19 @@ public class TeacherController {
 
     /**
      * 根据token显示教师有效的信息
-     * @param token
      */
     @ApiOperation("根据token显示教师有效的信息")
     @GetMapping("showInfo")
     public R<TeacherDto> getTeacherInfoByToken(@RequestHeader("token") String token){
         TeacherDto teacherDto = teacherService.getTeacherInfoByToken(token);
-        if (teacherDto!=null){
-            return R.success(teacherDto);
-        }
-        throw new CustomException(CustomExceptionCodeMsg.TOKEN_INVALID);
+//        if (teacherDto!=null){
+//            return R.success(teacherDto);
+//        }
+//        throw new CustomException(CustomExceptionCodeMsg.TOKEN_INVALID);
+        return R.success(teacherDto);
     }
 
-    /**
-     * 新增教师用户
-     * @param teacher
-     */
+    @ApiOperation("新增教师用户")
     @PostMapping
     public R<?> save(@RequestBody Teacher teacher){
         try {
@@ -87,4 +82,16 @@ public class TeacherController {
             throw new CustomException(CustomExceptionCodeMsg.SAVE_TEACHER_ERROR);
         }
     }
+
+    //查询自己所有的审核记录
+//    @ApiOperation("查询自己所有的审核记录")
+//    @GetMapping("/showAuditList")
+//    //返回类型是不同实体类型组成的列表
+//    public R<List<?>> showAuditList(@RequestHeader("token") String token){
+////        List<?> list = teacherService.showAuditList(token);
+//        return R.success(list);
+//    }
+
+
+
 }

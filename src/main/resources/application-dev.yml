@@ -1,5 +1,5 @@
 server:
-  port: 9999
+  port: 9998
 
 spring:
   datasource:
@@ -8,15 +8,3 @@ spring:
     url: jdbc:mysql://localhost:3306/teacher_info_manage_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
 
 
-mybatis-plus:
-  configuration:
-    map-underscore-to-camel-case: true # 在映射实体&属性时,将数据库中表名和字段名中的下划线去掉,按照驼峰命名法映射
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
-  global-config:
-    db-config:
-      # 逻辑删除配置
-      logic-delete-field: deleted
-      logic-not-delete-value: 0
-      logic-delete-value: 1
-      id-type: auto
-    type-aliases-package: com.aih.entity

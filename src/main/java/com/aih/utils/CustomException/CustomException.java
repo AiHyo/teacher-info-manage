@@ -1,6 +1,4 @@
-package com.aih.exception;
-
-import lombok.AllArgsConstructor;
+package com.aih.utils.CustomException;
 
 public class CustomException extends RuntimeException{
     private Integer code = 500;

@@ -3,6 +3,8 @@ package com.aih.service;
 import com.aih.entity.IdentityCardAudit;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * <p>
  * 身份证审核 服务类
@@ -13,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IIdentityCardAuditService extends IService<IdentityCardAudit> {
 
+    List<IdentityCardAudit> queryByOid();
+
+    List<IdentityCardAudit> queryByCid();
 }

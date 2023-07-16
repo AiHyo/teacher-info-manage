@@ -1,11 +1,8 @@
 package com.aih.service.impl;
 
-import com.aih.common.R;
-import com.aih.common.utils.JwtUtil;
+import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.*;
 import com.aih.entity.dto.TeacherDto;
-import com.aih.exception.CustomException;
-import com.aih.exception.CustomExceptionCodeMsg;
 import com.aih.mapper.*;
 import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -15,10 +12,8 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import javax.annotation.Resource;
-import javax.management.relation.RoleList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;

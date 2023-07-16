@@ -3,6 +3,8 @@ package com.aih.service;
 import com.aih.entity.AcademicPaperAudit;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * <p>
  * 论文审核 服务类
@@ -13,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit> {
 
+    List<AcademicPaperAudit> queryByCid();
+
+    List<AcademicPaperAudit> queryByOid();
 }

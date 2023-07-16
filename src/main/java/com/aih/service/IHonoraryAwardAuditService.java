@@ -3,6 +3,8 @@ package com.aih.service;
 import com.aih.entity.HonoraryAwardAudit;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
+
 /**
  * <p>
  * 荣誉奖项审核 服务类
@@ -13,4 +15,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IHonoraryAwardAuditService extends IService<HonoraryAwardAudit> {
 
+    List<HonoraryAwardAudit> queryByCid();
+
+    List<HonoraryAwardAudit> queryByOid();
 }

@@ -1,7 +1,10 @@
 package com.aih.service;
 
+import com.aih.entity.EducationExperienceAudit;
 import com.aih.entity.ProjectAudit;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
  * <p>
@@ -13,4 +16,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IProjectAuditService extends IService<ProjectAudit> {
 
+    List<ProjectAudit> queryByCid();
+
+    List<ProjectAudit> queryByOid();
 }

@@ -1,8 +1,7 @@
 package com.aih.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -34,6 +33,7 @@ public class HonoraryAwardAudit implements Serializable {
     private Long id;
 
     @ApiModelProperty("所属教师id")
+    @TableField(fill = FieldFill.INSERT)
     private Long tid;
 
     @ApiModelProperty("获奖时间")
@@ -49,10 +49,20 @@ public class HonoraryAwardAudit implements Serializable {
     private String url;
 
     @ApiModelProperty("审核状态 0:待审核 1:通过 2:驳回")
+    @TableField(fill = FieldFill.INSERT)
     private Integer auditStatus;
 
-    @ApiModelProperty("提交时间")
-    private LocalDateTime submitTime;
+    @ApiModelProperty("创建时间")
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @ApiModelProperty("更新时间")
+    @TableField(fill = FieldFill.UPDATE)
+    private LocalDateTime updateTime;
+
+    @ApiModelProperty("审核员id")
+    @TableField(fill = FieldFill.UPDATE)
+    private Long aid;
 
     @ApiModelProperty("教师备注")
     private String teacherRemark;
@@ -61,6 +71,7 @@ public class HonoraryAwardAudit implements Serializable {
     private String auditorRemark;
 
     @ApiModelProperty("是否展示 0:不展示 1:展示")
+    @TableField(fill = FieldFill.INSERT)
     private Integer isShow;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")

@@ -1,4 +1,4 @@
-package com.aih.common.utils;
+package com.aih.utils.jwt;
 
 import com.alibaba.fastjson2.JSON;
 import io.jsonwebtoken.Claims;

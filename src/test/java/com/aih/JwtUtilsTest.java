@@ -1,6 +1,6 @@
 package com.aih;
 
-import com.aih.common.utils.JwtUtil;
+import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.Teacher;
 import io.jsonwebtoken.Claims;
 import org.junit.jupiter.api.Test;

@@ -1,7 +1,10 @@
-package com.aih.exception;
+package com.aih.common.exception;
 
-import com.aih.common.R;
+import com.aih.utils.CustomException.CustomException;
+import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.utils.vo.R;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -23,16 +26,19 @@ public class GlobalExceptionHandler {
         }
         log.error("异常：{}",e);
         //不是自定义异常，则统一返回
-        return R.error(500,"服务器端异常");
+        return R.error(CustomExceptionCodeMsg.SERVER_ERROR.getCode(),CustomExceptionCodeMsg.SERVER_ERROR.getMsg());
     }
-
     /*@ExceptionHandler(value = {CustomException.class})
     public <T> R<T> handleCustomException(CustomException e) {
         return R.error(e.getCode(), e.getMsg());
     }
-
     @ExceptionHandler(value = {Exception.class})
     public <T> R<T> handleException(Exception e) {
         return R.error(500, "服务器端异常");
     }*/
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public <T> R<T> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+//        throw new CustomException(CustomExceptionCodeMsg.PARAM_FORMAT_ERROR);
+        return R.error(CustomExceptionCodeMsg.PARAM_FORMAT_ERROR.getCode(), CustomExceptionCodeMsg.PARAM_FORMAT_ERROR.getMsg());
+    }
 }
