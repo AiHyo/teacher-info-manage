@@ -18,7 +18,7 @@ public interface ITeacherService extends IService<Teacher> {
 
     Map<String,Object> login(Teacher teacher);
 
-    TeacherDto getTeacherInfoByToken(String token);
+    TeacherDto showInfo();
 
-    void logout(String token);
+    void logout();
 }

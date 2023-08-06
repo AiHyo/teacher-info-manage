@@ -3,7 +3,6 @@ package com.aih.controller;
 import com.aih.entity.EducationExperienceAudit;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
-import com.aih.entity.EducationExperienceAudit;
 import com.aih.service.IEducationExperienceAuditService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.ApiOperation;
@@ -35,6 +34,13 @@ public class EducationExperienceAuditController {
         return R.success("提交成功");
     }
 
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<EducationExperienceAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(educationExperienceService.getById(id));
+    }
+
+
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
@@ -65,7 +71,7 @@ public class EducationExperienceAuditController {
     @GetMapping("/queryOwn")
     public R<List<EducationExperienceAudit>> queryOwnEducationExperienceAudit(){
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(EducationExperienceAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(EducationExperienceAudit::getTid, UserInfoContext.getUser().getId());
         List<EducationExperienceAudit> list = educationExperienceService.list(queryWrapper);
         return R.success(list);
     }
@@ -79,6 +85,14 @@ public class EducationExperienceAuditController {
         List<EducationExperienceAudit> list = educationExperienceService.queryByCid();
         return R.success(list);
     }
+    @ApiOperation(value = "查询学院下未审批的")
+    @GetMapping("/queryByCidAndAuditStatus")
+    public R<List<EducationExperienceAudit>> queryByCidAndAuditStatus() {
+        List<EducationExperienceAudit> list = educationExperienceService.queryByCidAndAuditStatus();
+        return R.success(list);
+    }
+
+
 
     /**
      * 根据携带的token中教研室id查询教育经历审核信息

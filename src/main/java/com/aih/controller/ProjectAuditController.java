@@ -1,6 +1,5 @@
 package com.aih.controller;
 
-import com.aih.entity.EducationExperienceAudit;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.aih.entity.ProjectAudit;
@@ -35,11 +34,17 @@ public class ProjectAuditController {
         return R.success("提交成功");
     }
 
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<ProjectAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(projectService.getById(id));
+    }
+
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("通过项目审核")
-    @PostMapping("/pass")
+    @PutMapping("/pass")
     public R<?> passProjectAudit(@RequestBody ProjectAudit project){
         project.setAuditStatus(1);//审核通过
         project.setIsShow(1);//审核通过后自动显示
@@ -51,7 +56,7 @@ public class ProjectAuditController {
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("驳回项目审核")
-    @PostMapping("/reject")
+    @PutMapping("/reject")
     public R<?> rejectProjectAudit(@RequestBody ProjectAudit project){
         project.setAuditStatus(2);//审核驳回
         projectService.updateById(project);
@@ -65,7 +70,7 @@ public class ProjectAuditController {
     @GetMapping("/queryOwn")
     public R<List<ProjectAudit>> queryOwnProjectAudit() {
         LambdaQueryWrapper<ProjectAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(ProjectAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(ProjectAudit::getTid, UserInfoContext.getUser().getId());
         List<ProjectAudit> list = projectService.list(queryWrapper);
         return R.success(list);
     }

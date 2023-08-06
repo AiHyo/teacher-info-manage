@@ -24,10 +24,22 @@ public class GlobalExceptionHandler {
             //返回自定义异常
             return R.error(customException.getCode(),customException.getMsg());
         }
-        log.error("异常：{}",e);
+        log.error("【非自定义异常】↓↓↓",e);
         //不是自定义异常，则统一返回
         return R.error(CustomExceptionCodeMsg.SERVER_ERROR.getCode(),CustomExceptionCodeMsg.SERVER_ERROR.getMsg());
     }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public <T> R<T> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
+//        throw new CustomException(CustomExceptionCodeMsg.PARAM_FORMAT_ERROR);
+        return R.error(CustomExceptionCodeMsg.PARAM_FORMAT_ERROR.getCode(), CustomExceptionCodeMsg.PARAM_FORMAT_ERROR.getMsg());
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public <T> R<T> handleIllegalArgumentException(IllegalArgumentException ex) {
+        return R.error(CustomExceptionCodeMsg.NULL_PASSWORD.getCode(), CustomExceptionCodeMsg.NULL_PASSWORD.getMsg());
+    }
+
     /*@ExceptionHandler(value = {CustomException.class})
     public <T> R<T> handleCustomException(CustomException e) {
         return R.error(e.getCode(), e.getMsg());
@@ -36,9 +48,4 @@ public class GlobalExceptionHandler {
     public <T> R<T> handleException(Exception e) {
         return R.error(500, "服务器端异常");
     }*/
-    @ExceptionHandler(HttpMessageNotReadableException.class)
-    public <T> R<T> handleHttpMessageNotReadableException(HttpMessageNotReadableException ex) {
-//        throw new CustomException(CustomExceptionCodeMsg.PARAM_FORMAT_ERROR);
-        return R.error(CustomExceptionCodeMsg.PARAM_FORMAT_ERROR.getCode(), CustomExceptionCodeMsg.PARAM_FORMAT_ERROR.getMsg());
-    }
 }

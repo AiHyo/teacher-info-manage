@@ -8,7 +8,6 @@ import org.apache.ibatis.annotations.Select;
 import java.util.List;
 
 
-@Mapper
 /**
  * <p>
  * 教师(用户) Mapper 接口
@@ -17,12 +16,18 @@ import java.util.List;
  * @author AiH
  * @since 2023-07-07
  */
+@Mapper
 public interface TeacherMapper extends BaseMapper<Teacher> {
     List<String> getRoleNameByTeacherId(Long tid);
 
     @Select("select id from teacher where cid = #{cid} and is_auditor = 1")
-    List<Integer> getAuditorIdsByCid(Long cid);
+    List<Long> getAuditorIdsByCid(Long cid);
 
     @Select("select id from teacher where oid = #{oid}")
-    List<Integer> getTeacherIdsByOid(Long oid);
+    List<Long> getTeacherIdsByOid(Long oid);
+
+    @Select("select id from teacher where oid = #{oid} and is_auditor = 1")
+    List<Long> getAuditorIdsByOid(Long oid);
+
+
 }

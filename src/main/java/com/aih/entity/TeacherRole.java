@@ -1,5 +1,6 @@
 package com.aih.entity;
 
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import io.swagger.annotations.ApiModel;
@@ -29,4 +30,9 @@ public class TeacherRole implements Serializable {
 
     @ApiModelProperty("职务id")
     private Long rid;
+
+    @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
+    private Integer deleted;
+
 }

@@ -13,26 +13,33 @@ public class JwtUtilsTest {
     private JwtUtil jwtUtil;
 
     @Test
-    public void testCreateJwt(){
+    public void createJwt(){
         Teacher teacher = new Teacher();
         teacher.setUsername("xiaotian");
-        teacher.setPwd("123456");
-        String  token = jwtUtil.createToken(teacher);
+        teacher.setPassword("123456");
+        String  token = jwtUtil.createToken(teacher,"Teacher");
         System.out.println(token);
     }
     @Test
-    public void testParseJwt(){
-        String token = "eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIzMzZlNTNiNC1iNzgyLTQxYmEtOWRlMS1iZmQ3ZjY3ZjA0MzUiLCJzdWIiOiJ7XCJwd2RcIjpcIjEyMzQ1NlwiLFwidXNlck5hbWVcIjpcInhpYW90aWFuXCJ9IiwiaXNzIjoic3lzdGVtIiwiaWF0IjoxNjg5MjUzMjg1LCJleHAiOjE2ODkyNTUwODV9.UHik-WYOoP93KayP2WnG3uY3Ugkea-gLB3WOLM258dU";
+    public void parseJwt(){
+        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ7XCJwd2RcIjpcIjEyMzQ1NlwiLFwidXNlcm5hbWVcIjpcInhpYW90aWFuXCJ9IiwiZW50aXR5VHlwZSI6IlRlYWNoZXIiLCJqdGkiOiI5ZGE5MGQwZi0xZDJmLTQyMmEtYTBjZi03Mjc3YTMyOWFhM2EiLCJpc3MiOiLlsI_lpKkiLCJpYXQiOjE2OTEyMjAzODQsImV4cCI6MTY5MTIyMjE4NH0.HJ6S5lF4ivZ2jENKtsPuyQc2LMpr3VlkoGPKM7K_QJU";
         Claims claims = jwtUtil.parseToken(token);
         System.out.println(claims);
+        System.out.println(claims.getSubject());
+        System.out.println((String) claims.get("entityType"));
+        //字符串转成json
+
+
     }
     @Test
-    public void testParseJwt2(){
-        String token = "eyJhbGciOiJIUzI1NiJ9.eyJqdGkiOiIzMzZlNTNiNC1iNzgyLTQxYmEtOWRlMS1iZmQ3ZjY3ZjA0MzUiLCJzdWIiOiJ7XCJwd2RcIjpcIjEyMzQ1NlwiLFwidXNlck5hbWVcIjpcInhpYW90aWFuXCJ9IiwiaXNzIjoic3lzdGVtIiwiaWF0IjoxNjg5MjUzMjg1LCJleHAiOjE2ODkyNTUwODV9.UHik-WYOoP93KayP2WnG3uY3Ugkea-gLB3WOLM258dU";
+    public void parseJwt_2(){
+        String token = "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ7XCJwd2RcIjpcIjEyMzQ1NlwiLFwidXNlcm5hbWVcIjpcInhpYW90aWFuXCJ9IiwiZW50aXR5VHlwZSI6IlRlYWNoZXIiLCJqdGkiOiI5ZGE5MGQwZi0xZDJmLTQyMmEtYTBjZi03Mjc3YTMyOWFhM2EiLCJpc3MiOiLlsI_lpKkiLCJpYXQiOjE2OTEyMjAzODQsImV4cCI6MTY5MTIyMjE4NH0.HJ6S5lF4ivZ2jENKtsPuyQc2LMpr3VlkoGPKM7K_QJU";
         Teacher teacher = jwtUtil.parseToken(token,Teacher.class);
         System.out.println(teacher.getUsername());
         System.out.println(teacher);
     }
+
+
 
 
 }

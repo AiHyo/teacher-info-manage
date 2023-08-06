@@ -1,7 +1,11 @@
 package com.aih.service;
 
+import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -13,4 +17,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ISuperAdminService extends IService<SuperAdmin> {
 
+
+
+    Map<String, Object> login(SuperAdmin superAdmin);
+
+    SuperAdmin showInfo();
+
+    void logout();
+
+    void updateAdminStatus(Integer status, List<Long> ids);
 }

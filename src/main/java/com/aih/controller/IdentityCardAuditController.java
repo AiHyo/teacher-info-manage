@@ -1,6 +1,5 @@
 package com.aih.controller;
 
-import com.aih.entity.EducationExperienceAudit;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.aih.entity.IdentityCardAudit;
@@ -35,11 +34,17 @@ public class IdentityCardAuditController {
         return R.success("提交成功");
     }
 
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<IdentityCardAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(identityCardService.getById(id));
+    }
+
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("通过身份证审核")
-    @PostMapping("/pass")
+    @PutMapping("/pass")
     public R<?> passIdentityCardAudit(@RequestBody IdentityCardAudit identityCard){
         identityCard.setAuditStatus(1);//审核通过
         identityCard.setIsShow(1);//审核通过后自动显示
@@ -52,7 +57,7 @@ public class IdentityCardAuditController {
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("驳回身份证审核")
-    @PostMapping("/reject")
+    @PutMapping("/reject")
     public R<?> rejectIdentityCardAudit(@RequestBody IdentityCardAudit identityCard){
         identityCard.setAuditStatus(2);//审核驳回
         identityCardService.updateById(identityCard);
@@ -66,8 +71,8 @@ public class IdentityCardAuditController {
     @GetMapping("/queryOwn")
     public R<List<IdentityCardAudit>> queryOwnIdentityCardAudit() {
         LambdaQueryWrapper<IdentityCardAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(IdentityCardAudit::getTid, UserInfoContext.getTeacher().getId());
-        queryWrapper.eq(IdentityCardAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(IdentityCardAudit::getTid, UserInfoContext.getUser().getId());
+        queryWrapper.eq(IdentityCardAudit::getTid, UserInfoContext.getUser().getId());
         List<IdentityCardAudit> list = identityCardService.list(queryWrapper);
         return R.success(list);
     }

@@ -40,48 +40,44 @@ public class TeacherController {
     @PostMapping("/login")
     public R<Map<String,Object>> login(@RequestBody Teacher teacher)
     {
+        log.info("controller teacher:{}",teacher);
         Map<String, Object> data = teacherService.login(teacher);
-        log.info("data:{}",data);
-        if (data!=null){
-            return R.success(data);
-        }
-        throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
+        return R.success(data);
     }
 
     //logout还没实现拉黑token
     @ApiOperation("教师用户登出")
     @PostMapping("/logout")
-    public R<?> logout(@RequestHeader("token") String token){
-        teacherService.logout(token);
+    public R<?> logout(){
+        teacherService.logout();
         return R.success("登出成功");
     }
 
     /**
-     * 根据token显示教师有效的信息
+     * 根据token显示教师自己的有效信息
      */
-    @ApiOperation("根据token显示教师有效的信息")
+    @ApiOperation("显示教师自己的有效信息")
     @GetMapping("showInfo")
-    public R<TeacherDto> getTeacherInfoByToken(@RequestHeader("token") String token){
-        TeacherDto teacherDto = teacherService.getTeacherInfoByToken(token);
-//        if (teacherDto!=null){
-//            return R.success(teacherDto);
-//        }
-//        throw new CustomException(CustomExceptionCodeMsg.TOKEN_INVALID);
+    public R<TeacherDto> showInfo(){
+        TeacherDto teacherDto = teacherService.showInfo();
         return R.success(teacherDto);
+    }
+
+    @ApiOperation("修改教师信息")
+    @PutMapping("/update")
+    public R<?> update(@RequestBody Teacher teacher){
+        teacherService.updateById(teacher);
+        return R.success("修改教师基础信息成功");
     }
 
     @ApiOperation("新增教师用户")
     @PostMapping
     public R<?> save(@RequestBody Teacher teacher){
-        try {
-            teacher.setPwd(passwordEncoder.encode(teacher.getPwd()));
-            log.info("teacher:{}",teacher);
-            teacherService.save(teacher);
-            return R.success("新增教师用户成功");
-        } catch (Exception e) {
-            throw new CustomException(CustomExceptionCodeMsg.SAVE_TEACHER_ERROR);
-        }
+        teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));
+        teacherService.save(teacher);
+        return R.success("新增教师用户成功");
     }
+
 
     //查询自己所有的审核记录
 //    @ApiOperation("查询自己所有的审核记录")

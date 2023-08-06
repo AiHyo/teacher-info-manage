@@ -1,15 +1,15 @@
 package com.aih.utils;
 
-import com.aih.entity.Teacher;
+import com.aih.utils.vo.User;
 
 public class UserInfoContext {
-    private static ThreadLocal<Teacher> threadLocal = new ThreadLocal<>();
+    private static ThreadLocal<User> threadLocal = new ThreadLocal<>();
 
-    public static void setTeacher(Teacher teacher)
+    public static void setUser(User user)
     {
-        threadLocal.set(teacher);
+        threadLocal.set(user);
     }
-    public static Teacher getTeacher(){
+    public static User getUser(){
         return threadLocal.get();
     }
     public static void remove(){

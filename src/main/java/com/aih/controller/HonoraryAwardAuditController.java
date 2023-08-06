@@ -3,10 +3,8 @@ package com.aih.controller;
 import com.aih.entity.HonoraryAwardAudit;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
-import com.aih.entity.HonoraryAwardAudit;
 import com.aih.service.IHonoraryAwardAuditService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -35,6 +33,13 @@ public class HonoraryAwardAuditController {
         honoraryAwardService.save(honoraryAward);
         return R.success("提交成功");
     }
+
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<HonoraryAwardAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(honoraryAwardService.getById(id));
+    }
+
 
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
@@ -66,7 +71,7 @@ public class HonoraryAwardAuditController {
     @GetMapping("/queryOwn")
     public R<List<HonoraryAwardAudit>> queryOwnHonoraryAwardAudit() {
         LambdaQueryWrapper<HonoraryAwardAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(HonoraryAwardAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(HonoraryAwardAudit::getTid, UserInfoContext.getUser().getId());
         List<HonoraryAwardAudit> list = honoraryAwardService.list(queryWrapper);
         return R.success(list);
     }

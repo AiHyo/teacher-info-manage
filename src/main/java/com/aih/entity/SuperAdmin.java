@@ -2,6 +2,7 @@ package com.aih.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import java.io.Serializable;
 import io.swagger.annotations.ApiModel;
@@ -34,9 +35,10 @@ public class SuperAdmin implements Serializable {
     private String username;
 
     @ApiModelProperty("登陆密码")
-    private String pwd;
+    private String password;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
     private Integer deleted;
 
     @ApiModelProperty("test1")

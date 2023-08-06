@@ -5,7 +5,6 @@ import com.baomidou.mybatisplus.annotation.*;
 import java.io.Serializable;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Date;
 
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -40,7 +39,7 @@ public class AcademicPaperAudit implements Serializable {
     @ApiModelProperty("发表期刊")
     private String publishJournal;
 
-    @ApiModelProperty("发表时间")
+    @ApiModelProperty("发表日期")
     private LocalDate publishDate;
 
     @ApiModelProperty("doi号")
@@ -75,7 +74,12 @@ public class AcademicPaperAudit implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Integer isShow;
 
+    @ApiModelProperty("删除角色")
+    @TableField(fill = FieldFill.INSERT)
+    private String deleteRoles;
+
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
     private Integer deleted;
 
     @ApiModelProperty("test1")

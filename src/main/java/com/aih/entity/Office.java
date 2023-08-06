@@ -3,6 +3,8 @@ package com.aih.entity;
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
+
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.Data;
@@ -32,6 +34,7 @@ public class Office implements Serializable {
     private String cid;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
     private Integer deleted;
 
     @ApiModelProperty("test1")

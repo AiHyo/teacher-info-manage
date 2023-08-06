@@ -20,7 +20,6 @@ public class MyInterceptorConfig implements WebMvcConfigurer {
         interceptor.addPathPatterns("/**")
                 .excludePathPatterns(
                         "/teacher/login",
-                        "/teacher/info",
                         "/teacher/logout",
                         "/error",
                         "/swagger-ui/**",

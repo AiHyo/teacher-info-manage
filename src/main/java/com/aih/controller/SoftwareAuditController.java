@@ -1,6 +1,5 @@
 package com.aih.controller;
 
-import com.aih.entity.EducationExperienceAudit;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.aih.entity.SoftwareAudit;
@@ -35,11 +34,17 @@ public class SoftwareAuditController {
         return R.success("提交成功");
     }
 
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<SoftwareAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(softwareService.getById(id));
+    }
+
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("通过软件著作审核")
-    @PostMapping("/pass")
+    @PutMapping("/pass")
     public R<?> passSoftwareAudit(@RequestBody SoftwareAudit software){
         software.setAuditStatus(1);//审核通过
         software.setIsShow(1);//审核通过后自动显示
@@ -50,7 +55,7 @@ public class SoftwareAuditController {
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("驳回软件著作审核")
-    @PostMapping("/reject")
+    @PutMapping("/reject")
     public R<?> rejectSoftwareAudit(@RequestBody SoftwareAudit software){
         software.setAuditStatus(2);//审核驳回
         softwareService.updateById(software);
@@ -64,7 +69,7 @@ public class SoftwareAuditController {
     @GetMapping("/queryOwn")
     public R<List<SoftwareAudit>> queryOwnSoftwareAudit() {
         LambdaQueryWrapper<SoftwareAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(SoftwareAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(SoftwareAudit::getTid, UserInfoContext.getUser().getId());
         List<SoftwareAudit> list = softwareService.list(queryWrapper);
         return R.success(list);
     }

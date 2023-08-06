@@ -33,11 +33,18 @@ public class WorkExperienceAuditController {
         workExperienceService.save(workExperience);
         return R.success("提交成功");
     }
+
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<WorkExperienceAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(workExperienceService.getById(id));
+    }
+
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("通过工作经历审核")
-    @PostMapping("/pass")
+    @PutMapping("/pass")
     public R<?> passWorkExperienceAudit(@RequestBody WorkExperienceAudit workExperience){
         workExperience.setAuditStatus(1);//审核通过
         workExperience.setIsShow(1);//审核通过后自动显示
@@ -48,7 +55,7 @@ public class WorkExperienceAuditController {
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("驳回工作经历审核")
-    @PostMapping("/reject")
+    @PutMapping("/reject")
     public R<?> rejectWorkExperienceAudit(@RequestBody WorkExperienceAudit workExperience){
         workExperience.setAuditStatus(2);//审核驳回
         workExperienceService.updateById(workExperience);
@@ -62,7 +69,7 @@ public class WorkExperienceAuditController {
     @GetMapping("/queryOwn")
     public R<List<WorkExperienceAudit>> queryOwnWorkExperienceAudit() {
         LambdaQueryWrapper<WorkExperienceAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(WorkExperienceAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(WorkExperienceAudit::getTid, UserInfoContext.getUser().getId());
         List<WorkExperienceAudit> list = workExperienceService.list(queryWrapper);
         return R.success(list);
     }

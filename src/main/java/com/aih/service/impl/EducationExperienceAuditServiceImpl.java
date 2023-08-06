@@ -1,7 +1,6 @@
 package com.aih.service.impl;
 
 import com.aih.entity.EducationExperienceAudit;
-import com.aih.entity.EducationExperienceAudit;
 import com.aih.mapper.EducationExperienceAuditMapper;
 import com.aih.mapper.TeacherMapper;
 import com.aih.service.IEducationExperienceAuditService;
@@ -31,20 +30,30 @@ public class EducationExperienceAuditServiceImpl extends ServiceImpl<EducationEx
     @Override
     public List<EducationExperienceAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Integer> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getTeacher().getCid());
+        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的教育经历审核:即学院下的所有审核
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(EducationExperienceAudit::getTid, teacherIds);
+        return this.baseMapper.selectList(queryWrapper);
+    }
+    @Override
+    public List<EducationExperienceAudit> queryByCidAndAuditStatus() {
+        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        LambdaQueryWrapper<EducationExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.in(EducationExperienceAudit::getTid, teacherIds);
+        queryWrapper.eq(EducationExperienceAudit::getAuditStatus,0);
         return this.baseMapper.selectList(queryWrapper);
     }
 
     @Override
     public List<EducationExperienceAudit> queryByOid() {
         //先根据oid查询对应教研室下的所有tid
-        List<Integer> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getTeacher().getOid());
+        List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         //再根据tid查询所有的教育经历审核:即教研室下的所有审核
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(EducationExperienceAudit::getTid, teacherIds);
         return this.baseMapper.selectList(queryWrapper);
     }
+
+
 }

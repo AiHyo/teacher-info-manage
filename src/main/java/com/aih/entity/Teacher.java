@@ -1,9 +1,10 @@
 package com.aih.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
+import java.time.LocalDate;
+
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
@@ -37,7 +38,7 @@ public class Teacher implements Serializable {
     private String username;
 
     @ApiModelProperty("登录密码")
-    private String pwd;
+    private String password;
 
     @ApiModelProperty("性别   0:女 1:男")
     private Integer gender;
@@ -63,7 +64,12 @@ public class Teacher implements Serializable {
     @ApiModelProperty("是否审核员 0:不是 1:是")
     private Integer isAuditor;
 
+    @ApiModelProperty("生效日期")
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDate createDate;
+
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
     private Integer deleted;
 
     @ApiModelProperty("备用1")

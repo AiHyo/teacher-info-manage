@@ -76,7 +76,12 @@ public class TopicAudit implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private Integer isShow;
 
+    @ApiModelProperty("删除角色")
+    @TableField(fill = FieldFill.INSERT)
+    private String deleteRoles;
+
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
     private Integer deleted;
 
     @ApiModelProperty("test1")

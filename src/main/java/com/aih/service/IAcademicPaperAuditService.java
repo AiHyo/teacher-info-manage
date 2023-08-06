@@ -15,7 +15,35 @@ import java.util.List;
  */
 public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit> {
 
-    List<AcademicPaperAudit> queryByCid();
+    List<AcademicPaperAudit> queryAllByCid();
+    List<AcademicPaperAudit> queryNotAuditByCid();
 
-    List<AcademicPaperAudit> queryByOid();
+    List<AcademicPaperAudit> queryAllByOid();
+
+    List<AcademicPaperAudit> queryNotAuditByOid();
+
+    List<AcademicPaperAudit> queryPassAuditByCid();
+
+    List<AcademicPaperAudit> queryRejectAuditByCid();
+
+    List<AcademicPaperAudit> queryPassAuditByOid();
+
+    List<AcademicPaperAudit> queryRejectAuditByOid();
+
+    List<AcademicPaperAudit> queryOwnAll();
+
+    List<AcademicPaperAudit> queryOwnNotAudit();
+
+    List<AcademicPaperAudit> queryOwnPassAudit();
+
+    List<AcademicPaperAudit> queryOwnRejectAudit();
+
+    void addDeleteRoles(Long id);
+
+
+    AcademicPaperAudit queryById(Long id);
+
+    void passAcademicPaperAudit(AcademicPaperAudit academicPaper);
+
+    void rejectAcademicPaperAudit(AcademicPaperAudit academicPaper);
 }

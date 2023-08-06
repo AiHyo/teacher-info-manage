@@ -16,6 +16,8 @@ import java.util.List;
 public interface IEducationExperienceAuditService extends IService<EducationExperienceAudit> {
 
     List<EducationExperienceAudit> queryByOid();
+    List<EducationExperienceAudit> queryByCidAndAuditStatus();
 
     List<EducationExperienceAudit> queryByCid();
+
 }

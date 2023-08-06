@@ -1,5 +1,8 @@
 package com.aih.service.impl;
 
+import com.aih.utils.CustomException.CustomException;
+import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.*;
 import com.aih.entity.dto.TeacherDto;
@@ -42,8 +45,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     private CollegeMapper collegeMapper;
     @Autowired
     private OfficeMapper officeMapper;
-
-    private RoleMapper roleMapper;
     @Autowired
     private EducationExperienceAuditServiceImpl educationExperienceService;
     @Autowired
@@ -62,38 +63,36 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     public Map<String, Object> login(Teacher teacher) {
         //根据教师用户名查询
-        log.info("teacher:{}",teacher);
+        log.info("teacher传入参数:{}",teacher);
         LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Teacher::getUsername,teacher.getUsername());
         Teacher loginTeacher = this.baseMapper.selectOne(queryWrapper);
+        log.info("找到的loginTeacher:{}",loginTeacher);
         //如果不为空,并且密码和传入密码相匹配,则生成token
-        log.info("loginTeacher:{}",loginTeacher);
-        if(loginTeacher!=null && passwordEncoder.matches(teacher.getPwd(),loginTeacher.getPwd()))
+        if(loginTeacher!=null && passwordEncoder.matches(teacher.getPassword(),loginTeacher.getPassword()))
         {
-            loginTeacher.setPwd(null);
-            //创建jwt
-            String token = jwtUtil.createToken(loginTeacher);
+            loginTeacher.setPassword(null);//将密码置空
+            String token = jwtUtil.createToken(loginTeacher,"Teacher");
             //返回数据
             HashMap<String, Object> data = new HashMap<>();
             data.put("token",token);
             return data;
         }
-        return null;
+        throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
     }
 
     @Override
-    public TeacherDto getTeacherInfoByToken(String token) {
-        Teacher loginTeacher = null;
-        //解析token
-        try {
-            loginTeacher = jwtUtil.parseToken(token, Teacher.class);
-        } catch (Exception e) {
-            log.error("token解析失败");
-        }
-        if (loginTeacher == null){
-            return null;
-        }
-        Long tid = loginTeacher.getId();
+    public TeacherDto showInfo() {
+        Long id = UserInfoContext.getUser().getId();
+        /*if(!String.valueOf(id).startsWith("1")){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
+        }*/
+        Teacher loginTeacher = this.baseMapper.selectById(id);
+        /*if (loginTeacher == null){
+            //未找到对应的教师
+            throw new CustomException(CustomExceptionCodeMsg.NOT_FIND_TEACHER);
+        }*/
+        loginTeacher.setPassword(null);//将密码置空
         TeacherDto teacherDto = new TeacherDto();
         BeanUtils.copyProperties(loginTeacher,teacherDto);//将loginTeacher的属性复制到teacherDto、
 
@@ -101,30 +100,30 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         teacherDto.setCollegeName(collegeMapper.getCollegeNameById(loginTeacher.getCid()));
         teacherDto.setOfficeName(officeMapper.getOfficeNameById(loginTeacher.getOid()));
         //获取职务
-        teacherDto.setRoleList(this.baseMapper.getRoleNameByTeacherId(tid));
+        teacherDto.setRoleList(this.baseMapper.getRoleNameByTeacherId(id));
 
         //获取正在显示的身份证资料
-        teacherDto.setIdentityCard(this.queryIdentityCardShowByTeacherId(tid));
+        teacherDto.setIdentityCard(this.queryIdentityCardShowByTeacherId(id));
         //教育经历
-        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTeacherId(tid));
+        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTeacherId(id));
         //工作经历
-        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTeacherId(tid));
+        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTeacherId(id));
         //荣誉奖励
-        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTeacherId(tid));
+        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTeacherId(id));
         //课题
-        teacherDto.setTopicList(this.queryTopicShowListByTeacherId(tid));
+        teacherDto.setTopicList(this.queryTopicShowListByTeacherId(id));
         //论文
-        teacherDto.setAcademicPaperList(this.queryAcademicPaperShowListByTeacherId(tid));
+        teacherDto.setAcademicPaperList(this.queryAcademicPaperShowListByTeacherId(id));
         //项目
-        teacherDto.setProjectList(this.queryProjectShowListByTeacherId(tid));
+        teacherDto.setProjectList(this.queryProjectShowListByTeacherId(id));
         //软件著作
-        teacherDto.setSoftwareList(this.querySoftwareShowListByTeacherId(tid));
+        teacherDto.setSoftwareList(this.querySoftwareShowListByTeacherId(id));
 
         return teacherDto;
     }
 
     @Override
-    public void logout(String token) {
+    public void logout() {
         //退出登录,将token加入黑名单
     }
 

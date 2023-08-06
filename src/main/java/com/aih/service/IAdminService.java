@@ -1,7 +1,11 @@
 package com.aih.service;
 
 import com.aih.entity.Admin;
+import com.aih.entity.Teacher;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * <p>
@@ -12,5 +16,15 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2023-07-07
  */
 public interface IAdminService extends IService<Admin> {
+
+    Map<String, Object> login(Admin admin);
+
+    Admin showInfo();
+
+    void updateIsAuditor(Integer isAuditor, List<Long> ids);
+
+    void logout();
+
+    List<Teacher> getTeacherListByCid();
 
 }

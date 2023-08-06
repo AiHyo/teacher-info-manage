@@ -1,7 +1,6 @@
 package com.aih.service.impl;
 
 import com.aih.entity.TopicAudit;
-import com.aih.entity.TopicAudit;
 import com.aih.mapper.TeacherMapper;
 import com.aih.mapper.TopicAuditMapper;
 import com.aih.service.ITopicAuditService;
@@ -31,7 +30,7 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
     @Override
     public List<TopicAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Integer> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getTeacher().getCid());
+        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的课题审核:即学院下的所有审核
         LambdaQueryWrapper<TopicAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(TopicAudit::getTid, teacherIds);
@@ -41,7 +40,7 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
     @Override
     public List<TopicAudit> queryByOid() {
         //先根据oid查询对应教研室下的所有tid
-        List<Integer> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getTeacher().getOid());
+        List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         //再根据tid查询所有的课题审核:即教研室下的所有审核
         LambdaQueryWrapper<TopicAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(TopicAudit::getTid, teacherIds);

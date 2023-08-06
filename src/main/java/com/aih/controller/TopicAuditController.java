@@ -3,7 +3,6 @@ package com.aih.controller;
 import com.aih.entity.TopicAudit;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
-import com.aih.entity.TopicAudit;
 import com.aih.service.ITopicAuditService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.ApiOperation;
@@ -35,11 +34,17 @@ public class TopicAuditController {
         return R.success("提交成功");
     }
 
+    @ApiOperation(value = "根据id查询审核信息")
+    @GetMapping("/query/{id}")
+    public R<TopicAudit> queryById(@PathVariable("id") Integer id) {
+        return R.success(topicService.getById(id));
+    }
+
     /**
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("通过课题审核")
-    @PostMapping("/pass")
+    @PutMapping("/pass")
     public R<?> passTopicAudit(@RequestBody TopicAudit topic){
         topic.setAuditStatus(1);//审核通过
         topic.setIsShow(1);//审核通过后自动显示
@@ -50,7 +55,7 @@ public class TopicAuditController {
      * 审核员可添加审核员备注 审核员(aid)&审核时间(updateTime)会自动填充
      */
     @ApiOperation("驳回课题审核")
-    @PostMapping("/reject")
+    @PutMapping("/reject")
     public R<?> rejectTopicAudit(@RequestBody TopicAudit topic){
         topic.setAuditStatus(2);//审核驳回
         topicService.updateById(topic);
@@ -64,7 +69,7 @@ public class TopicAuditController {
     @GetMapping("/queryOwn")
     public R<List<TopicAudit>> queryOwnTopicAudit() {
         LambdaQueryWrapper<TopicAudit> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(TopicAudit::getTid, UserInfoContext.getTeacher().getId());
+        queryWrapper.eq(TopicAudit::getTid, UserInfoContext.getUser().getId());
         List<TopicAudit> list = topicService.list(queryWrapper);
         return R.success(list);
     }

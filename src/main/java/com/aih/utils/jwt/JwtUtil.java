@@ -15,21 +15,23 @@ import java.util.UUID;
 
 @Component
 public class JwtUtil {
-    // 有效期
-    private static final long JWT_EXPIRE = 30*60*1000L;  //半小时
-    // 令牌秘钥
-    private static final String JWT_KEY = "123456";
+    private static final long JWT_EXPIRE = 30*60*1000L; //半小时 有效期
+    private static final String JWT_KEY = "123456";     //密钥
 
-    public  String createToken(Object data){
-        // 当前时间
-        long currentTime = System.currentTimeMillis();
-        // 过期时间
-        long expTime = currentTime+JWT_EXPIRE;
+    public  String createToken(Object data,String entityType){
+        long currentTime = System.currentTimeMillis();// 当前时间
+        long expTime = currentTime+JWT_EXPIRE;  // 过期时间
+        String issuer = "小天"; // 签发人名称
+        String id = UUID.randomUUID().toString(); // 生成一个随机的唯一标识符
+
         // 构建jwt
+        Claims claims = Jwts.claims().setSubject(JSON.toJSONString(data));
+        claims.put("entityType", entityType);
+
         JwtBuilder builder = Jwts.builder()
-                .setId(UUID.randomUUID()+"")
-                .setSubject(JSON.toJSONString(data))
-                .setIssuer("system")
+                .setClaims(claims)
+                .setId(id)
+                .setIssuer(issuer)
                 .setIssuedAt(new Date(currentTime))
                 .signWith(SignatureAlgorithm.HS256, encodeSecret(JWT_KEY))
                 .setExpiration(new Date(expTime));
@@ -50,11 +52,11 @@ public class JwtUtil {
         return body;
     }
 
-    public <T> T parseToken(String token,Class<T> clazz){
+    public <T> T parseToken(String token,Class<T> cla){
         Claims body = Jwts.parser()
                 .setSigningKey(encodeSecret(JWT_KEY))
                 .parseClaimsJws(token)
                 .getBody();
-        return JSON.parseObject(body.getSubject(),clazz);
+        return JSON.parseObject(body.getSubject(),cla);
     }
 }

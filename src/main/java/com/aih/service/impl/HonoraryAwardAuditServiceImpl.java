@@ -1,7 +1,6 @@
 package com.aih.service.impl;
 
 import com.aih.entity.HonoraryAwardAudit;
-import com.aih.entity.HonoraryAwardAudit;
 import com.aih.mapper.HonoraryAwardAuditMapper;
 import com.aih.mapper.TeacherMapper;
 import com.aih.service.IHonoraryAwardAuditService;
@@ -30,7 +29,7 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
     @Override
     public List<HonoraryAwardAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Integer> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getTeacher().getCid());
+        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的荣誉奖项审核:即学院下的所有审核
         LambdaQueryWrapper<HonoraryAwardAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(HonoraryAwardAudit::getTid, teacherIds);
@@ -40,7 +39,7 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
     @Override
     public List<HonoraryAwardAudit> queryByOid() {
         //先根据oid查询对应教研室下的所有tid
-        List<Integer> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getTeacher().getOid());
+        List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         //再根据tid查询所有的荣誉奖项审核:即教研室下的所有审核
         LambdaQueryWrapper<HonoraryAwardAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(HonoraryAwardAudit::getTid, teacherIds);
