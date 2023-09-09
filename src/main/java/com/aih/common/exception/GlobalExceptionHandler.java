@@ -5,11 +5,15 @@ import com.aih.utils.CustomException.CustomExceptionCodeMsg;
 import com.aih.utils.vo.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.FileNotFoundException;
 
 @ControllerAdvice(annotations = {RestController.class, Controller.class})   //这个注解表示这个类是全局异常处理类
 @ResponseBody
@@ -37,9 +41,28 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     public <T> R<T> handleIllegalArgumentException(IllegalArgumentException ex) {
-        return R.error(CustomExceptionCodeMsg.NULL_PASSWORD.getCode(), CustomExceptionCodeMsg.NULL_PASSWORD.getMsg());
+        //非法传参异常
+        return R.error(CustomExceptionCodeMsg.ILLEGAL_ARGUMENT.getCode(), CustomExceptionCodeMsg.ILLEGAL_ARGUMENT.getMsg());
     }
 
+    @ExceptionHandler(FileNotFoundException.class)
+    public <T> R<T> handleFileNotFoundException(FileNotFoundException ex) {
+        return R.error(CustomExceptionCodeMsg.FILE_NOT_FOUND.getCode(), CustomExceptionCodeMsg.FILE_NOT_FOUND.getMsg());
+    }
+
+    @ExceptionHandler(NullPointerException.class)
+    public <T> R<T> handleNullPointerException(NullPointerException ex) {
+        return R.error(CustomExceptionCodeMsg.NULL_POINTER.getCode(), CustomExceptionCodeMsg.NULL_POINTER.getMsg());
+    }
+
+    @ExceptionHandler(BadSqlGrammarException.class)//SQLSyntaxErrorException
+    public <T> R<T> handleBadSqlGrammarException(BadSqlGrammarException ex) {
+        return R.error(CustomExceptionCodeMsg.BAD_SQL_GRAMMAR.getCode(), CustomExceptionCodeMsg.BAD_SQL_GRAMMAR.getMsg());
+    }
+    @ExceptionHandler(MissingServletRequestParameterException.class)
+    public <T> R<T> handleMissingServletRequestParameterException(MissingServletRequestParameterException ex) {
+        return R.error(CustomExceptionCodeMsg.MISSING_SERVLET_REQUEST_PARAMETER.getCode(), CustomExceptionCodeMsg.MISSING_SERVLET_REQUEST_PARAMETER.getMsg());
+    }
     /*@ExceptionHandler(value = {CustomException.class})
     public <T> R<T> handleCustomException(CustomException e) {
         return R.error(e.getCode(), e.getMsg());

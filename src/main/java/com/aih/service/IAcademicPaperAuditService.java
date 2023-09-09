@@ -1,9 +1,8 @@
 package com.aih.service;
 
 import com.aih.entity.AcademicPaperAudit;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * <p>
@@ -15,28 +14,28 @@ import java.util.List;
  */
 public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit> {
 
-    List<AcademicPaperAudit> queryAllByCid();
-    List<AcademicPaperAudit> queryNotAuditByCid();
+    Page<AcademicPaperAudit> queryAllByCid(Page<AcademicPaperAudit> pageInfo, String title);
+    Page<AcademicPaperAudit> queryNotAuditByCid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryAllByOid();
+    Page<AcademicPaperAudit> queryAllByOid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryNotAuditByOid();
+    Page<AcademicPaperAudit> queryNotAuditByOid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryPassAuditByCid();
+    Page<AcademicPaperAudit> queryPassAuditByCid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryRejectAuditByCid();
+    Page<AcademicPaperAudit> queryRejectAuditByCid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryPassAuditByOid();
+    Page<AcademicPaperAudit> queryPassAuditByOid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryRejectAuditByOid();
+    Page<AcademicPaperAudit> queryRejectAuditByOid(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryOwnAll();
+    Page<AcademicPaperAudit> queryOwnAll(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryOwnNotAudit();
+    Page<AcademicPaperAudit> queryOwnNotAudit(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryOwnPassAudit();
+    Page<AcademicPaperAudit> queryOwnPassAudit(Page<AcademicPaperAudit> pageInfo, String title);
 
-    List<AcademicPaperAudit> queryOwnRejectAudit();
+    Page<AcademicPaperAudit> queryOwnRejectAudit(Page<AcademicPaperAudit> pageInfo, String title);
 
     void addDeleteRoles(Long id);
 

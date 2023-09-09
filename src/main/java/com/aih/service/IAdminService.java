@@ -2,6 +2,7 @@ package com.aih.service;
 
 import com.aih.entity.Admin;
 import com.aih.entity.Teacher;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -25,6 +26,6 @@ public interface IAdminService extends IService<Admin> {
 
     void logout();
 
-    List<Teacher> getTeacherListByCid();
+    Page<Teacher> getTeacherList(Page<Teacher> pageInfo, String keyword, Integer isAuditor, Integer gender, String ethnic, String birthplace, String address);
 
 }

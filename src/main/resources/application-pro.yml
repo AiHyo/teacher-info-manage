@@ -6,3 +6,9 @@ spring:
     username: teacher_info_db
     password: AiH888
     url: jdbc:mysql://localhost:3306/teacher_info_db?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+
+ip: 47.113.150.138
+
+# 文件存储路径
+file:
+  root-path: /www/wwwroot/TeacherInfoManage/files # files/

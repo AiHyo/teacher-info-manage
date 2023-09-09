@@ -1,11 +1,14 @@
 package com.aih.controller;
 
-import com.aih.utils.vo.R;
-import com.aih.entity.dto.TeacherDto;
+import com.aih.utils.AuthAccess;
 import com.aih.utils.CustomException.CustomException;
 import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.utils.UserInfoContext;
+import com.aih.utils.vo.R;
+import com.aih.entity.dto.TeacherDto;
 import com.aih.entity.Teacher;
 import com.aih.service.ITeacherService;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -59,7 +62,8 @@ public class TeacherController {
     @ApiOperation("显示教师自己的有效信息")
     @GetMapping("showInfo")
     public R<TeacherDto> showInfo(){
-        TeacherDto teacherDto = teacherService.showInfo();
+        Long uid = UserInfoContext.getUser().getId();
+        TeacherDto teacherDto = teacherService.queryTeacherDtoByTid(uid);
         return R.success(teacherDto);
     }
 
@@ -70,12 +74,34 @@ public class TeacherController {
         return R.success("修改教师基础信息成功");
     }
 
+    @AuthAccess//放行
     @ApiOperation("新增教师用户")
     @PostMapping
     public R<?> save(@RequestBody Teacher teacher){
         teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));
         teacherService.save(teacher);
         return R.success("新增教师用户成功");
+    }
+
+    /**
+        可选模糊查询 keyword: 教师名称
+     */
+    @ApiOperation("查询管理教研室下所有的教师")
+    @GetMapping("/getTeacherList")
+    public R<Page<Teacher>> getTeacherList(@RequestParam("pageNum") Integer pageNum,
+                                           @RequestParam("pageSize") Integer pageSize,
+                                           @RequestParam(value = "teacherName",required = false) String teacherName,
+                                           @RequestParam(value = "gender",required = false)Integer gender,
+                                           @RequestParam(value = "ethnic",required = false) String ethnic,
+                                           @RequestParam(value = "birthplace",required = false) String birthplace,
+                                           @RequestParam(value = "address",required = false) String address){
+        Long tid = UserInfoContext.getUser().getId();
+        Teacher findTeacher = teacherService.getById(tid);
+        if (findTeacher.getIsAuditor()==0) {
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
+        }
+        Page<Teacher> pageInfo = new Page<>(pageNum, pageSize);
+        return R.success(teacherService.getTeacherList(pageInfo,pageNum,pageSize,teacherName,gender,ethnic,birthplace,address));
     }
 
 
@@ -87,6 +113,8 @@ public class TeacherController {
 ////        List<?> list = teacherService.showAuditList(token);
 //        return R.success(list);
 //    }
+
+
 
 
 

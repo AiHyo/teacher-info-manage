@@ -5,6 +5,7 @@ import com.aih.controller.SuperAdminController;
 import com.aih.controller.TeacherController;
 import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
+import com.aih.utils.AuthAccess;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.Teacher;
@@ -32,8 +33,15 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         if(request.getRequestURI().contains("login")){
-            return true;//登录请求不需要验证
+            return true;//登录请求直接放行
         }
+        if (handler instanceof HandlerMethod) {
+            AuthAccess methodAnnotation = ((HandlerMethod) handler).getMethodAnnotation(AuthAccess.class);
+            if(methodAnnotation != null){
+                return true;//有该注解的方法直接放行
+            }
+        }
+
         String token  = request.getHeader("token");
 //        log.debug(request.getRequestURI() + "需要验证： " + token);
         if(token == null){

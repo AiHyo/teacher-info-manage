@@ -8,7 +8,9 @@ import com.aih.utils.CustomException.CustomException;
 import com.aih.utils.CustomException.CustomExceptionCodeMsg;
 import com.aih.utils.UserInfoContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -66,43 +68,47 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
     }
 
     @Override
-    public List<AcademicPaperAudit> queryOwnAll() {
+    public Page<AcademicPaperAudit> queryOwnAll(Page<AcademicPaperAudit> pageInfo, String title) {
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.eq(AcademicPaperAudit::getTid, uid)
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",");
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
 //                .and( wrapper -> wrapper
 //                        .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
 //                        .or().isNull(AcademicPaperAudit::getDeleteRoles));
-        return this.baseMapper.selectList(queryWrapper);
+        return this.baseMapper.selectPage(pageInfo,queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryOwnNotAudit() {
+    public Page<AcademicPaperAudit> queryOwnNotAudit(Page<AcademicPaperAudit> pageInfo, String title) {
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AcademicPaperAudit::getTid, UserInfoContext.getUser().getId())
-                .eq(AcademicPaperAudit::getAuditStatus, 0);
-        return this.baseMapper.selectList(queryWrapper);
+                .eq(AcademicPaperAudit::getAuditStatus, 0)
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryOwnPassAudit() {
+    public Page<AcademicPaperAudit> queryOwnPassAudit(Page<AcademicPaperAudit> pageInfo, String title) {
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AcademicPaperAudit::getTid, uid)
                 .eq(AcademicPaperAudit::getAuditStatus, 1)
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryOwnRejectAudit() {
+    public Page<AcademicPaperAudit> queryOwnRejectAudit(Page<AcademicPaperAudit> pageInfo, String title) {
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(AcademicPaperAudit::getTid, uid)
                 .eq(AcademicPaperAudit::getAuditStatus, 2)
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
@@ -139,97 +145,106 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
     }
 
     @Override
-    public List<AcademicPaperAudit> queryAllByCid() {
+    public Page<AcademicPaperAudit> queryAllByCid(Page<AcademicPaperAudit> pageInfo, String title) {
         //先根据cid查询对应学院下的所有tid
         List<Long> auditorIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的审核:即学院下的所有审核
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper;
         queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, auditorIds)
-                .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
+                .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())//上任以来
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
 //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
-        return this.baseMapper.selectList(queryWrapper);
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryNotAuditByCid() {
+    public Page<AcademicPaperAudit> queryNotAuditByCid(Page<AcademicPaperAudit> pageInfo, String title) { //不需要判断删除角色
         List<Long> auditorIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, auditorIds)
+                .eq(AcademicPaperAudit::getAuditStatus, 0)//审核状态为0:未审核   ***  忘加了
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
-        return this.baseMapper.selectList(queryWrapper);
+//                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")  加错了
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
     @Override
-    public List<AcademicPaperAudit> queryPassAuditByCid() {
+    public Page<AcademicPaperAudit> queryPassAuditByCid(Page<AcademicPaperAudit> pageInfo, String title) {
         List<Long> auditorIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, auditorIds)
                 .eq(AcademicPaperAudit::getAuditStatus, 1)//审核状态为1:审核通过
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
     @Override
-    public List<AcademicPaperAudit> queryRejectAuditByCid() {
+    public Page<AcademicPaperAudit> queryRejectAuditByCid(Page<AcademicPaperAudit> pageInfo, String title) {
         List<Long> auditorIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, auditorIds)
                 .eq(AcademicPaperAudit::getAuditStatus, 2)//审核状态为2:审核驳回
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryAllByOid() {
+    public Page<AcademicPaperAudit> queryAllByOid(Page<AcademicPaperAudit> pageInfo, String title) {
         //先根据oid查询对应教研室下的所有tid
         List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         //再根据tid查询所有的审核:即教研室下的所有审核
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, teacherIds)
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryNotAuditByOid() {
+    public Page<AcademicPaperAudit> queryNotAuditByOid(Page<AcademicPaperAudit> pageInfo, String title) { //不需要判断删除角色
         List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, teacherIds)
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .eq(AcademicPaperAudit::getAuditStatus, 0);//审核状态为0:待审核
-        return this.baseMapper.selectList(queryWrapper);
+                .eq(AcademicPaperAudit::getAuditStatus, 0)
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryPassAuditByOid() {
+    public Page<AcademicPaperAudit> queryPassAuditByOid(Page<AcademicPaperAudit> pageInfo, String title) {
         List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, teacherIds)
                 .eq(AcademicPaperAudit::getAuditStatus, 1)//审核状态为1:审核通过
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     @Override
-    public List<AcademicPaperAudit> queryRejectAuditByOid() {
+    public Page<AcademicPaperAudit> queryRejectAuditByOid(Page<AcademicPaperAudit> pageInfo, String title) {
         List<Long> teacherIds = teacherMapper.getTeacherIdsByOid(UserInfoContext.getUser().getOid());
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(AcademicPaperAudit::getTid, teacherIds)
                 .eq(AcademicPaperAudit::getAuditStatus, 2)//审核状态为2:审核驳回
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())
-                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",");
-        return this.baseMapper.selectList(queryWrapper);
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + UserInfoContext.getUser().getId() + ",")
+                .like((StringUtils.isNotBlank(title)), AcademicPaperAudit::getTitle, title);//模糊查询
+        return this.baseMapper.selectPage(pageInfo, queryWrapper);
     }
 
     /**
      * 封装一个获取有权限操作该记录的方法
      */
-    private List<Long> getPowerIds(Long id){
+    private List<Long> getPowerIds(Long id){ //id:该条记录的id
         AcademicPaperAudit academicPaper = this.baseMapper.selectById(id);
         Long tid = academicPaper.getTid();
         Teacher teacher = teacherMapper.selectById(tid);//获取该记录的所属教师
@@ -237,7 +252,7 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
         //获取有权限操作该条记录的id
         List<Long> powerIds = null;
         if (0 == isAuditor) {
-            //非审核员,则根据教研室id,查审核员id
+            //非审核员(=是教师),则根据教研室id,查审核员id
             Long oid = teacher.getOid();
             powerIds = teacherMapper.getAuditorIdsByOid(oid);
             log.info("该记录有权限的审核员id:{}", powerIds);

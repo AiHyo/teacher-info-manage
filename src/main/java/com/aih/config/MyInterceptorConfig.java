@@ -25,7 +25,6 @@ public class MyInterceptorConfig implements WebMvcConfigurer {
                         "/swagger-ui/**",
                         "/swagger-resources/**"
                 );
-        // 添加服务器路径
 //        interceptor.excludePathPatterns("http://47.113.150.138:9998/");
     }
 

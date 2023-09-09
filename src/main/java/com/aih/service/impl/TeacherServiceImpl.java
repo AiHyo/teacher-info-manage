@@ -9,6 +9,7 @@ import com.aih.entity.dto.TeacherDto;
 import com.aih.mapper.*;
 import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -81,44 +82,35 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
     }
 
-    @Override
-    public TeacherDto showInfo() {
-        Long id = UserInfoContext.getUser().getId();
-        /*if(!String.valueOf(id).startsWith("1")){
-            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
-        }*/
-        Teacher loginTeacher = this.baseMapper.selectById(id);
-        /*if (loginTeacher == null){
-            //未找到对应的教师
-            throw new CustomException(CustomExceptionCodeMsg.NOT_FIND_TEACHER);
-        }*/
-        loginTeacher.setPassword(null);//将密码置空
+    @Override//根据tid获取教师信息TeacherDto的
+    public TeacherDto queryTeacherDtoByTid(Long tid) {
+        Teacher findTeacher = this.baseMapper.selectById(tid);
+        findTeacher.setPassword(null);//将密码置空
         TeacherDto teacherDto = new TeacherDto();
-        BeanUtils.copyProperties(loginTeacher,teacherDto);//将loginTeacher的属性复制到teacherDto、
+        BeanUtils.copyProperties(findTeacher,teacherDto);//将loginTeacher的属性复制到teacherDto
 
         //获取学院和科室名称
-        teacherDto.setCollegeName(collegeMapper.getCollegeNameById(loginTeacher.getCid()));
-        teacherDto.setOfficeName(officeMapper.getOfficeNameById(loginTeacher.getOid()));
+        teacherDto.setCollegeName(collegeMapper.getCollegeNameById(findTeacher.getCid()));
+        teacherDto.setOfficeName(officeMapper.getOfficeNameById(findTeacher.getOid()));
         //获取职务
-        teacherDto.setRoleList(this.baseMapper.getRoleNameByTeacherId(id));
+        teacherDto.setRoleList(this.baseMapper.getRoleNameByTeacherId(tid));
 
         //获取正在显示的身份证资料
-        teacherDto.setIdentityCard(this.queryIdentityCardShowByTeacherId(id));
+        teacherDto.setIdentityCard(this.queryIdentityCardShowByTeacherId(tid));
         //教育经历
-        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTeacherId(id));
+        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTeacherId(tid));
         //工作经历
-        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTeacherId(id));
+        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTeacherId(tid));
         //荣誉奖励
-        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTeacherId(id));
+        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTeacherId(tid));
         //课题
-        teacherDto.setTopicList(this.queryTopicShowListByTeacherId(id));
+        teacherDto.setTopicList(this.queryTopicShowListByTeacherId(tid));
         //论文
-        teacherDto.setAcademicPaperList(this.queryAcademicPaperShowListByTeacherId(id));
+        teacherDto.setAcademicPaperList(this.queryAcademicPaperShowListByTeacherId(tid));
         //项目
-        teacherDto.setProjectList(this.queryProjectShowListByTeacherId(id));
+        teacherDto.setProjectList(this.queryProjectShowListByTeacherId(tid));
         //软件著作
-        teacherDto.setSoftwareList(this.querySoftwareShowListByTeacherId(id));
-
+        teacherDto.setSoftwareList(this.querySoftwareShowListByTeacherId(tid));
         return teacherDto;
     }
 
@@ -126,6 +118,30 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     public void logout() {
         //退出登录,将token加入黑名单
     }
+
+    @Override
+    public Page<Teacher> getTeacherList(Page<Teacher> pageInfo, Integer pageNum, Integer pageSize, String teacherName, Integer gender, String ethnic, String birthplace, String address) {
+        Long oid = UserInfoContext.getUser().getOid();
+        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Teacher::getOid,oid);//对应教研室下的所有
+        if (teacherName!=null){
+            queryWrapper.like(Teacher::getTeacherName,teacherName);
+        }
+        if (gender != null) {
+            queryWrapper.eq(Teacher::getGender,gender);
+        }
+        if (ethnic!=null){
+            queryWrapper.like(Teacher::getEthnic,ethnic);
+        }
+        if (birthplace!=null){
+            queryWrapper.like(Teacher::getBirthplace,birthplace);
+        }
+        if (address!=null){
+            queryWrapper.like(Teacher::getAddress,address);
+        }
+        return this.baseMapper.selectPage(pageInfo,queryWrapper);
+    }
+
 
     //封装一个根据tid获取正在显示的身份证资料的方法
     private IdentityCardAudit queryIdentityCardShowByTeacherId(Long tid){
