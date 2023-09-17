@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Select;
 
+import java.util.List;
+
 /**
  * <p>
  * 教研室 Mapper 接口
@@ -16,5 +18,11 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface OfficeMapper extends BaseMapper<Office> {
     @Select("select office_name from office where id = #{id}")
-    String getOfficeNameById(Long id);
+    String getOfficeNameByOid(Long id);
+
+    @Select("<script>" +
+                "select * from office where cid = #{cid} " +
+                "<if test='officeName!=null'> and office_name LIKE CONCAT('%', #{officeName}, '%')</if>" +
+            "</script>")
+    List<Office> getOfficeList(Long cid, String officeName);
 }

@@ -1,10 +1,12 @@
 package com.aih.service;
 
+import com.aih.entity.IdentityCardAudit;
 import com.aih.entity.Teacher;
-import com.aih.entity.dto.TeacherDto;
+import com.aih.entity.vo.TeacherDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -24,4 +26,9 @@ public interface ITeacherService extends IService<Teacher> {
     void logout();
 
     Page<Teacher> getTeacherList(Page<Teacher> pageInfo, Integer pageNum, Integer pageSize, String teacherName, Integer gender, String ethnic, String birthplace, String address);
+
+    IdentityCardAudit queryIdentityCardShowByTid(Long id);
+
+    List<String> getRoleListByTid(Long id);
+
 }

@@ -1,22 +1,22 @@
 package com.aih.controller;
 
 import cn.hutool.core.io.FileUtil;
+import com.aih.custom.annotation.AuthAccess;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.entity.Teacher;
-import com.aih.mapper.AdminMapper;
 import com.aih.mapper.TeacherMapper;
-import com.aih.utils.AuthAccess;
-import com.aih.utils.CustomException.CustomException;
-import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.service.ITeacherService;
+import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.FileInfo;
 import com.aih.utils.vo.R;
 import com.aih.entity.AcademicPaperAudit;
 import com.aih.service.IAcademicPaperAuditService;
-import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.poi.ss.formula.functions.T;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -41,10 +41,15 @@ import java.util.List;
 @Slf4j
 @RestController
 @RequestMapping("/academicPaperAudit")
+//@ComponentScan(basePackages = {"com.aih.utils"})
 public class AcademicPaperAuditController {
 
     @Autowired
+    private MyUtil myUtil;
+    @Autowired
     private IAcademicPaperAuditService academicPaperService;
+    @Resource
+    private TeacherMapper teacherMapper;
 
     /**
      * tid、createTime、auditStatus、isShow以及删除标记会自动填充
@@ -52,6 +57,7 @@ public class AcademicPaperAuditController {
     @ApiOperation(value = "提交论文审核")
     @PostMapping("/submit")
     public R<?> saveAcademicPaperAudit(@RequestBody AcademicPaperAudit academicPaper){
+        //需要上传附件
         academicPaperService.save(academicPaper);
         return R.success("提交成功");
     }
@@ -87,47 +93,30 @@ public class AcademicPaperAuditController {
 
 
     /**
-     * 根据携带的token查询
+     * 教师：根据个人携带的token，查询自己的审核信息
+     * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
+     * @param pageNum 页码
+     * @param pageSize 每页条数
+     * @param title 标题 （可选）
      */
-    @ApiOperation(value = "查询自己所有审核记录")
-    @GetMapping("/queryOwnAll")
-    public R<Page<AcademicPaperAudit>> queryOwnAll(@RequestParam("pageNum") Integer pageNum,
+    @ApiOperation(value = "[教师]查询自己审核记录")
+    @GetMapping("/queryOwnRecord")
+    public R<Page<AcademicPaperAudit>> queryOwnRecord(@RequestParam(value = "auditStatus",required = false) Integer auditStatus,
+                                                   @RequestParam("pageNum") Integer pageNum,
                                                    @RequestParam("pageSize") Integer pageSize,
                                                    @RequestParam(value = "title",required = false) String title){
+        if (UserInfoContext.getUser().getId().toString().charAt(0) != '1'){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
+        }
         Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryOwnAll(pageInfo,title));
+        return R.success(academicPaperService.queryOwnRecord(pageInfo,auditStatus,title));
     }
 
-    @ApiOperation(value = "查询自己未审核的")
-    @GetMapping("/queryOwnNotAudit")
-    public R<Page<AcademicPaperAudit>> queryOwnNotAudit(@RequestParam("pageNum") Integer pageNum,
-                                                         @RequestParam("pageSize") Integer pageSize,
-                                                         @RequestParam(value = "title",required = false) String title){
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-//        academicPaperService.queryOwnNotAudit(pageInfo,title);
-        return R.success(academicPaperService.queryOwnNotAudit(pageInfo,title));
-    }
-
-    @ApiOperation(value = "查询自己审核通过的")
-    @GetMapping("/queryOwnPassAudit")
-    public R<Page<AcademicPaperAudit>> queryOwnPassAudit(@RequestParam("pageNum") Integer pageNum,
-                                                         @RequestParam("pageSize") Integer pageSize,
-                                                         @RequestParam(value = "title",required = false) String title){
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryOwnPassAudit(pageInfo,title));
-    }
-
-    @ApiOperation(value = "查询自己审核驳回的")
-    @GetMapping("/queryOwnRejectAudit")
-    public R<Page<AcademicPaperAudit>> queryOwnRejectAudit(@RequestParam("pageNum") Integer pageNum,
-                                                           @RequestParam("pageSize") Integer pageSize,
-                                                           @RequestParam(value = "title",required = false) String title){
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryOwnRejectAudit(pageInfo,title));
-    }
 
     //通用
     /**
+     * @param id 记录id
+     * @return
      * 通用 删除自己的显示列表（角色间互不干扰） 特判：本人删除自己未审核记录，即删除审核申请，直接执行删除操作（审核/管理也删除）
      * 另外 没有权利 / 已删除过 会返回自定义错误
      */
@@ -138,80 +127,42 @@ public class AcademicPaperAuditController {
         return R.success("删除成功");
     }
 
+    //审核员
+    /**
+     * 审核员：根据个人携带的token，查询自己上任后手下的审核信息
+     */
+    @ApiOperation(value = "[审核员]查询教研室下所有教师审核信息")
+    @GetMapping("/queryRecordsByOid")
+    public R<Page<AcademicPaperAudit>> queryRecordsByOid(@RequestParam(value = "auditStatus",required = false) Integer auditStatus,
+                                                     @RequestParam("pageNum") Integer pageNum,
+                                                     @RequestParam("pageSize") Integer pageSize,
+                                                     @RequestParam(value = "title",required = false) String title) {
+        Long uid = UserInfoContext.getUser().getId();
+        if (uid.toString().charAt(0) != '1' || teacherMapper.selectById(uid).getIsAuditor()!=1){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
+        }
+        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
+        return R.success(academicPaperService.queryRecordsByOid(pageInfo,auditStatus,title));
+    }
+
     //管理员
     /**
      * 管理员：审核员：根据个人携带的token，查询自己上任后手下的审核信息
      */
     @ApiOperation(value = "[管理员]查询学院下所有审核员审核信息")
     @GetMapping("/queryAllByCid")
-    public R<Page<AcademicPaperAudit>> queryAllByCid(@RequestParam("pageNum") Integer pageNum,
+    public R<Page<AcademicPaperAudit>> queryAllByCid(@RequestParam(value = "auditStatus",required = false) Integer auditStatus,
+                                                     @RequestParam("pageNum") Integer pageNum,
                                                      @RequestParam("pageSize") Integer pageSize,
                                                      @RequestParam(value = "title",required = false) String title){
+        if (UserInfoContext.getUser().getId().toString().charAt(0) != '2'){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
+        }
         Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryAllByCid(pageInfo,title));
-    }
-    @ApiOperation(value = "查询学院下未审批的")
-    @GetMapping("/queryNotAuditByCid")
-    public R<Page<AcademicPaperAudit>> queryNotAuditByCid(@RequestParam("pageNum") Integer pageNum,
-                                                           @RequestParam("pageSize") Integer pageSize,
-                                                           @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryNotAuditByCid(pageInfo,title));
-    }
-    @ApiOperation(value = "查询学院下审核通过的")
-    @GetMapping("/queryPassAuditByCid")
-    public R<Page<AcademicPaperAudit>> queryPassAuditByCid(@RequestParam("pageNum") Integer pageNum,
-                                                           @RequestParam("pageSize") Integer pageSize,
-                                                           @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryPassAuditByCid(pageInfo,title));
-    }
-    @ApiOperation(value = "查询学院下审核驳回的")
-    @GetMapping("/queryRejectAuditByCid")
-    public R<Page<AcademicPaperAudit>> queryRejectAuditByCid(@RequestParam("pageNum") Integer pageNum,
-                                                             @RequestParam("pageSize") Integer pageSize,
-                                                             @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryRejectAuditByCid(pageInfo,title));
+        return R.success(academicPaperService.queryRecordsByCid(pageInfo,auditStatus,title));
     }
 
 
-    //审核员
-    /**
-     * 审核员：根据个人携带的token，查询自己上任后手下的审核信息
-     */
-    @ApiOperation(value = "[审核员]查询教研室下所有教师审核信息")
-    @GetMapping("/queryAllByOid")
-    public R<Page<AcademicPaperAudit>> queryAllByOid(@RequestParam("pageNum") Integer pageNum,
-                                                     @RequestParam("pageSize") Integer pageSize,
-                                                     @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryAllByOid(pageInfo,title));
-    }
-    @ApiOperation(value = "查询教研室下未审批的")
-    @GetMapping("/queryNotAuditByOid")
-    public R<Page<AcademicPaperAudit>> queryNotAuditByOid(@RequestParam("pageNum") Integer pageNum,
-                                                           @RequestParam("pageSize") Integer pageSize,
-                                                           @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryNotAuditByOid(pageInfo,title));
-    }
-    @ApiOperation(value = "查询教研室下审核通过的")
-    @GetMapping("/queryPassAuditByOid")
-    public R<Page<AcademicPaperAudit>> queryPassAuditByOid(@RequestParam("pageNum") Integer pageNum,
-                                                           @RequestParam("pageSize") Integer pageSize,
-                                                           @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryPassAuditByOid(pageInfo,title));
-    }
-    @ApiOperation(value = "查询教研室下审核驳回的")
-    @GetMapping("/queryRejectAuditByOid")
-    public R<Page<AcademicPaperAudit>> queryRejectAuditByOid(@RequestParam("pageNum") Integer pageNum,
-                                                             @RequestParam("pageSize") Integer pageSize,
-                                                             @RequestParam(value = "title",required = false) String title) {
-        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryRejectAuditByOid(pageInfo,title));
-    }
 
     //////////////////////////////附件////////////////////////////
     @Value("${ip:localhost}")
@@ -230,8 +181,6 @@ public class AcademicPaperAuditController {
     @ApiOperation("上传附件")
     @PostMapping("/file/upload")
     public R<?> upload(@RequestParam("file") MultipartFile file) throws IOException {
-        log.info(rootPath);
-        log.info(basePath);
 //        basePath.replace("\\","/");
         Long tid = UserInfoContext.getUser().getId();
         //判断是否是教师用户
@@ -279,14 +228,14 @@ public class AcademicPaperAuditController {
                 bos.write(buffer, 0, len);
             }
         }*/
-                                                                                    //对文件名编码是解决中文文件名乱码问题
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 下载
-//        response.addHeader("Content-Disposition", "inline;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 预览
         String filePath = parentPath + File.separator + fileName;
         if (!FileUtil.exist(filePath)) {
             log.error("文件不存在：{}", filePath);
             throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
         }
+        //对文件名编码是解决中文文件名乱码问题
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 下载
+        //response.addHeader("Content-Disposition", "inline;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 预览
         byte[] bytes = FileUtil.readBytes(filePath);
         ServletOutputStream outputStream = response.getOutputStream();
         outputStream.write(bytes);
@@ -318,7 +267,6 @@ public class AcademicPaperAuditController {
      * 重命名文件,如果重名会覆盖,请先调用判断
      * @param oldFileName 原文件名
      * @param newMainName 新名称 ：不带后缀
-     * @return
      */
     @ApiOperation("重命名文件")
     @PutMapping("/file/rename")
@@ -372,7 +320,7 @@ public class AcademicPaperAuditController {
         }
         FileUtil.del(filePath);//删除文件
         //如果同级目录没有文件了，则删除父级文件夹
-        if(FileUtil.listFileNames(parentPath).size() == 0){
+        if(FileUtil.listFileNames(parentPath).isEmpty()){
             FileUtil.del(parentPath);
         }
 
@@ -398,7 +346,7 @@ public class AcademicPaperAuditController {
     }
 
     /**
-     * 需要角色有权限才能查看
+     * 需要角色有审核权限才能查看
      */
     @ApiOperation("根据tid查询附件列表")
     @GetMapping("/file/list/{tid}") //附件不会很多,应该不需要分页
@@ -409,7 +357,7 @@ public class AcademicPaperAuditController {
         }
         //②tid合法:判断uid是否有权限
         Long uid = UserInfoContext.getUser().getId();
-        List<Long> powerIds = this.getPowerIds(tid);
+        List<Long> powerIds = myUtil.getPowerIdsByTid(tid);
         if (!powerIds.contains(uid)) {
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
@@ -430,34 +378,6 @@ public class AcademicPaperAuditController {
             fileList.add(fileInfo);
         }
         return R.success(fileList);
-    }
-
-
-    @Resource
-    private TeacherMapper teacherMapper;
-    @Resource
-    private AdminMapper adminMapper;
-    private List<Long> getPowerIds(Long tid){
-        Teacher teacher = teacherMapper.selectById(tid);//获取该记录的所属教师
-        if (teacher == null) {
-            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
-        }
-        Integer isAuditor = teacher.getIsAuditor();
-        //获取有权限操作该条记录的id
-        List<Long> powerIds = null;
-        if (0 == isAuditor) {
-            //非审核员(=是教师),则根据教研室id,查审核员id
-            Long oid = teacher.getOid();
-            powerIds = teacherMapper.getAuditorIdsByOid(oid);
-            log.info("该记录有权限的审核员id:{}", powerIds);
-        }else {
-            //是审核员,则根据学院id,查管理员id
-            Long cid = teacher.getCid();
-            powerIds = adminMapper.getAdminIdsByCid(cid);
-            log.info("该记录有权限的管理员id:{}", powerIds);
-        }
-        powerIds.add(tid);//再加上教师自己的id
-        return powerIds;
     }
 
 

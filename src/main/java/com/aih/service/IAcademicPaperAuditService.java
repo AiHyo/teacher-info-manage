@@ -14,28 +14,10 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit> {
 
-    Page<AcademicPaperAudit> queryAllByCid(Page<AcademicPaperAudit> pageInfo, String title);
-    Page<AcademicPaperAudit> queryNotAuditByCid(Page<AcademicPaperAudit> pageInfo, String title);
+    Page<AcademicPaperAudit> queryRecordsByCid(Page<AcademicPaperAudit> pageInfo, Integer auditStatus, String title);
 
-    Page<AcademicPaperAudit> queryAllByOid(Page<AcademicPaperAudit> pageInfo, String title);
+    Page<AcademicPaperAudit> queryRecordsByOid(Page<AcademicPaperAudit> pageInfo, Integer auditStatus, String title);
 
-    Page<AcademicPaperAudit> queryNotAuditByOid(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryPassAuditByCid(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryRejectAuditByCid(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryPassAuditByOid(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryRejectAuditByOid(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryOwnAll(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryOwnNotAudit(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryOwnPassAudit(Page<AcademicPaperAudit> pageInfo, String title);
-
-    Page<AcademicPaperAudit> queryOwnRejectAudit(Page<AcademicPaperAudit> pageInfo, String title);
 
     void addDeleteRoles(Long id);
 
@@ -45,4 +27,6 @@ public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit>
     void passAcademicPaperAudit(AcademicPaperAudit academicPaper);
 
     void rejectAcademicPaperAudit(AcademicPaperAudit academicPaper);
+
+    Page<AcademicPaperAudit> queryOwnRecord(Page<AcademicPaperAudit> pageInfo, Integer auditStatus, String title);
 }

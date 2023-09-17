@@ -1,11 +1,11 @@
 package com.aih.service.impl;
 
-import com.aih.utils.CustomException.CustomException;
-import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.*;
-import com.aih.entity.dto.TeacherDto;
+import com.aih.entity.vo.TeacherDto;
 import com.aih.mapper.*;
 import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -90,19 +90,19 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         BeanUtils.copyProperties(findTeacher,teacherDto);//将loginTeacher的属性复制到teacherDto
 
         //获取学院和科室名称
-        teacherDto.setCollegeName(collegeMapper.getCollegeNameById(findTeacher.getCid()));
-        teacherDto.setOfficeName(officeMapper.getOfficeNameById(findTeacher.getOid()));
+        teacherDto.setCollegeName(collegeMapper.getCollegeNameByCid(findTeacher.getCid()));
+        teacherDto.setOfficeName(officeMapper.getOfficeNameByOid(findTeacher.getOid()));
         //获取职务
         teacherDto.setRoleList(this.baseMapper.getRoleNameByTeacherId(tid));
 
         //获取正在显示的身份证资料
-        teacherDto.setIdentityCard(this.queryIdentityCardShowByTeacherId(tid));
+        teacherDto.setIdentityCard(this.queryIdentityCardShowByTid(tid));
         //教育经历
-        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTeacherId(tid));
+        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTid(tid));
         //工作经历
-        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTeacherId(tid));
+        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTid(tid));
         //荣誉奖励
-        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTeacherId(tid));
+        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTid(tid));
         //课题
         teacherDto.setTopicList(this.queryTopicShowListByTeacherId(tid));
         //论文
@@ -144,7 +144,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
 
     //封装一个根据tid获取正在显示的身份证资料的方法
-    private IdentityCardAudit queryIdentityCardShowByTeacherId(Long tid){
+    public IdentityCardAudit queryIdentityCardShowByTid(Long tid){
         LambdaQueryWrapper<IdentityCardAudit> queryWrapper_identityCard = new LambdaQueryWrapper<>();
         queryWrapper_identityCard.eq(IdentityCardAudit::getTid,tid);  //根据tid查询
         queryWrapper_identityCard.eq(IdentityCardAudit::getAuditStatus,1);//审核通过
@@ -152,28 +152,32 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         IdentityCardAudit identityCard = identityCardAuditMapper.selectOne(queryWrapper_identityCard);
         return identityCard;
     }
+
+    @Override
+    public List<String> getRoleListByTid(Long id) {
+        return this.baseMapper.getRoleNameByTeacherId(id);
+    }
+
     //教育经历
-    private List<EducationExperienceAudit> queryEducationExperienceShowListByTeacherId(Long tid){
+    private List<EducationExperienceAudit> queryEducationExperienceShowListByTid(Long tid){
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper_educationExperience = new LambdaQueryWrapper<>();
         queryWrapper_educationExperience.eq(EducationExperienceAudit::getTid,tid);  //根据tid查询
         queryWrapper_educationExperience.eq(EducationExperienceAudit::getAuditStatus,1);//审核通过
         queryWrapper_educationExperience.eq(EducationExperienceAudit::getIsShow,1);     //正在显示
         queryWrapper_educationExperience.orderByAsc(EducationExperienceAudit::getStaDate);  //按开始时间升序
-        List<EducationExperienceAudit> educationExperienceList = educationExperienceService.list(queryWrapper_educationExperience);
-        return educationExperienceList;
+        return educationExperienceService.list(queryWrapper_educationExperience);
     }
     //工作经历
-    private List<WorkExperienceAudit> queryWorkExperienceShowListByTeacherId(Long tid){
+    private List<WorkExperienceAudit> queryWorkExperienceShowListByTid(Long tid){
         LambdaQueryWrapper<WorkExperienceAudit> queryWrapper_workExperience = new LambdaQueryWrapper<>();
         queryWrapper_workExperience.eq(WorkExperienceAudit::getTid,tid);  //根据tid查询
         queryWrapper_workExperience.eq(WorkExperienceAudit::getAuditStatus,1);//审核通过
         queryWrapper_workExperience.eq(WorkExperienceAudit::getIsShow,1);     //正在显示
         queryWrapper_workExperience.orderByAsc(WorkExperienceAudit::getStaDate);  //按开始时间升序
-        List<WorkExperienceAudit> workExperienceList = workExperienceService.list(queryWrapper_workExperience);
-        return workExperienceList;
+        return workExperienceService.list(queryWrapper_workExperience);
     }
     //荣誉奖励
-    private List<HonoraryAwardAudit> queryHonoraryAwardShowListByTeacherId(Long tid){
+    private List<HonoraryAwardAudit> queryHonoraryAwardShowListByTid(Long tid){
         LambdaQueryWrapper<HonoraryAwardAudit> queryWrapper_honoraryAward = new LambdaQueryWrapper<>();
         queryWrapper_honoraryAward.eq(HonoraryAwardAudit::getTid,tid);  //根据tid查询
         queryWrapper_honoraryAward.eq(HonoraryAwardAudit::getAuditStatus,1);//审核通过

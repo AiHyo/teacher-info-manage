@@ -1,4 +1,4 @@
-package com.aih.entity.dto;
+package com.aih.entity.vo;
 
 import com.aih.entity.*;
 import lombok.AllArgsConstructor;

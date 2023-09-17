@@ -1,6 +1,6 @@
 package com.aih.utils.vo;
 
-import com.aih.utils.CustomException.CustomException;
+import com.aih.custom.exception.CustomException;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

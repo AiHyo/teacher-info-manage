@@ -26,7 +26,7 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
             return ;
         }
 
-        metaObject.setValue("createDate", LocalDate.now());
+//        metaObject.setValue("createDate", LocalDate.now());
         metaObject.setValue("createTime", LocalDateTime.now());
         metaObject.setValue("tid", UserInfoContext.getUser().getId());
         metaObject.setValue("auditStatus",0); //新增审核数据,默认待审核

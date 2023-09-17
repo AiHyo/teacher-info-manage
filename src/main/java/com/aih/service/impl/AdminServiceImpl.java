@@ -7,8 +7,8 @@ import com.aih.mapper.AdminMapper;
 import com.aih.mapper.OfficeMapper;
 import com.aih.mapper.TeacherMapper;
 import com.aih.service.IAdminService;
-import com.aih.utils.CustomException.CustomException;
-import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -85,26 +85,6 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
 
     @Override
     public void updateIsAuditor(Integer isAuditor, List<Long> ids) {
-        /*if (!String.valueOf(UserInfoContext.getUser().getId()).startsWith("2")){
-            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
-        }*/
-        //判断ids是否合法
-        LambdaQueryWrapper<Teacher> queryWrapper_1 = new LambdaQueryWrapper<>();
-        queryWrapper_1.in(Teacher::getId, ids);
-        Long count = teacherMapper.selectCount(queryWrapper_1);
-        if (count!=ids.size()) {
-            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-        }
-        Long cid = UserInfoContext.getUser().getCid();
-        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Teacher::getId, ids);
-        List<Teacher> teachers = teacherMapper.selectList(queryWrapper);
-        for (Teacher teacher : teachers) {
-            if (!teacher.getCid().equals(cid)) {
-                throw new CustomException(CustomExceptionCodeMsg.UPDATE_AUDIT_POWER_ERROR);
-            }
-        }
-        //开始操作
         log.info("isAuditor:{},ids:{}",isAuditor,ids);
         LambdaUpdateWrapper<Teacher> updateWrapper = new LambdaUpdateWrapper<>();
         updateWrapper.in(ids!=null,Teacher::getId,ids)

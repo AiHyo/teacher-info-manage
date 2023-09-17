@@ -5,15 +5,13 @@ import com.aih.controller.SuperAdminController;
 import com.aih.controller.TeacherController;
 import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
-import com.aih.utils.AuthAccess;
+import com.aih.custom.annotation.AuthAccess;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.Teacher;
-import com.aih.utils.CustomException.CustomException;
-import com.aih.utils.CustomException.CustomExceptionCodeMsg;
-import com.aih.utils.vo.R;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.utils.vo.User;
-import com.alibaba.fastjson2.JSON;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,8 +22,8 @@ import org.springframework.web.servlet.HandlerInterceptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-@Component
 @Slf4j
+@Component
 public class JwtValidateInterceptor implements HandlerInterceptor {
     @Autowired
     private JwtUtil jwtUtil;
@@ -111,3 +109,4 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
         }
     }
 }
+

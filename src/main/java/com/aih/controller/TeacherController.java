@@ -1,11 +1,11 @@
 package com.aih.controller;
 
-import com.aih.utils.AuthAccess;
-import com.aih.utils.CustomException.CustomException;
-import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.custom.annotation.AuthAccess;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
-import com.aih.entity.dto.TeacherDto;
+import com.aih.entity.vo.TeacherDto;
 import com.aih.entity.Teacher;
 import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -67,13 +67,20 @@ public class TeacherController {
         return R.success(teacherDto);
     }
 
+
     @ApiOperation("修改教师信息")
     @PutMapping("/update")
     public R<?> update(@RequestBody Teacher teacher){
+        if (!UserInfoContext.getUser().getId().equals(teacher.getId())) {
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_SELF);
+        }
         teacherService.updateById(teacher);
         return R.success("修改教师基础信息成功");
     }
 
+    /**
+     * test接口
+     */
     @AuthAccess//放行
     @ApiOperation("新增教师用户")
     @PostMapping

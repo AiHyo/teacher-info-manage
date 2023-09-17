@@ -2,12 +2,11 @@ package com.aih.service.impl;
 
 import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
-import com.aih.entity.Teacher;
 import com.aih.mapper.AdminMapper;
 import com.aih.mapper.SuperAdminMapper;
 import com.aih.service.ISuperAdminService;
-import com.aih.utils.CustomException.CustomException;
-import com.aih.utils.CustomException.CustomExceptionCodeMsg;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -81,13 +80,6 @@ public class SuperAdminServiceImpl extends ServiceImpl<SuperAdminMapper, SuperAd
 
     @Override
     public void updateAdminStatus(Integer status, List<Long> ids) {
-        //判断ids是否合法
-        LambdaQueryWrapper<Admin> queryWrapper_ids = new LambdaQueryWrapper<>();
-        queryWrapper_ids.in(Admin::getId, ids);
-        Long count = adminMapper.selectCount(queryWrapper_ids);
-        if (count!=ids.size()) {
-            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-        }
         //开始操作
         log.info("AdminStatus:{},ids:{}",status,ids);
         LambdaUpdateWrapper<Admin> updateWrapper = new LambdaUpdateWrapper<>();

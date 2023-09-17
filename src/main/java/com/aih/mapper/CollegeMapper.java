@@ -17,5 +17,5 @@ import org.apache.ibatis.annotations.Select;
 @Mapper
 public interface CollegeMapper extends BaseMapper<College> {
     @Select("select college_name from college where id = #{id}")
-    String getCollegeNameById(Long id);
+    String getCollegeNameByCid(Long id);
 }

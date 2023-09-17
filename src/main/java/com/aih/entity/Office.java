@@ -31,7 +31,7 @@ public class Office implements Serializable {
     private String officeName;
 
     @ApiModelProperty("所属学院id")
-    private String cid;
+    private Long cid;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic

@@ -1,18 +1,31 @@
 package com.aih.controller;
 
+import cn.hutool.poi.excel.ExcelReader;
+import cn.hutool.poi.excel.ExcelUtil;
+import com.aih.custom.annotation.AuthAccess;
+import com.aih.custom.exception.CustomException;
+import com.aih.custom.exception.CustomExceptionCodeMsg;
 import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
+import com.aih.entity.Teacher;
+import com.aih.mapper.TeacherMapper;
 import com.aih.service.IAdminService;
 import com.aih.service.ISuperAdminService;
+import com.aih.service.ITeacherService;
 import com.aih.utils.vo.R;
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiModelProperty;
 import io.swagger.annotations.ApiOperation;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.multipart.MultipartFile;
 
+import javax.annotation.Resource;
+import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
@@ -32,15 +45,33 @@ public class SuperAdminController {
     private ISuperAdminService superAdminService;
     @Autowired
     private IAdminService adminService;
+    @Autowired
+    private ITeacherService teacherService;
     /**
      * test 创建超管
      */
+    @AuthAccess
     @ApiOperation("创建超级管理员")
     @PostMapping("/create")
     public R<?> save(@RequestBody SuperAdmin superAdmin){
         superAdmin.setPassword(passwordEncoder.encode(superAdmin.getPassword()));
         superAdminService.save(superAdmin);
         return R.success("创建成功");
+    }
+
+    @ApiOperation("Excel批量导入教师信息")
+    @PostMapping("/import")
+    @Transactional(rollbackFor=Exception.class) //事务回滚
+    public R<?> importExcel(MultipartFile file) throws IOException {
+        ExcelReader reader = ExcelUtil.getReader(file.getInputStream());
+        List<Teacher> teacherList = reader.readAll(Teacher.class);
+        try {
+            teacherService.saveBatch(teacherList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new CustomException(CustomExceptionCodeMsg.EXCEL_IMPORT_ERROR);
+        }
+        return R.success("导入成功");
     }
 
     /**
@@ -105,9 +136,16 @@ public class SuperAdminController {
     /**
      * ids非法 抛出自定义异常
      */
-    @ApiModelProperty("可批量启用/禁用管理员")
+    @ApiOperation("可批量启用/禁用管理员")
     @PostMapping("/updateAdminStatus/{status}")
     public R<?> updateAdminStatus(@PathVariable Integer status, @RequestParam List<Long> ids){
+        //判断ids是否合法
+        LambdaQueryWrapper<Admin> queryWrapper_ids = new LambdaQueryWrapper<>();
+        queryWrapper_ids.in(Admin::getId, ids);
+        long count = adminService.count(queryWrapper_ids);
+        if (count!=ids.size()) {
+            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
+        }
         superAdminService.updateAdminStatus(status,ids);
         return R.success("修改成功");
     }

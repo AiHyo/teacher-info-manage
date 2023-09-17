@@ -1,7 +1,11 @@
 package com.aih.service;
 
+import com.aih.entity.College;
 import com.aih.entity.Office;
 import com.baomidou.mybatisplus.extension.service.IService;
+import org.apache.ibatis.annotations.Mapper;
+
+import java.util.List;
 
 /**
  * <p>
@@ -11,6 +15,6 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @author AiH
  * @since 2023-07-07
  */
-public interface IOfficeService extends IService<Office> {
 
+public interface IOfficeService extends IService<Office> {
 }
