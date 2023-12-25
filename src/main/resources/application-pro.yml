@@ -11,4 +11,6 @@ ip: 47.113.150.138
 
 # 文件存储路径
 file:
-  root-path: /www/wwwroot/TeacherInfoManage/files # files/
+  root-path: /www/wwwroot/TeacherInfoManage/files
+  template-file: /www/wwwroot/TeacherInfoManage/files/template/TemplateTeacherInfo.docx
+  temporary-path: /www/wwwroot/TeacherInfoManage/files/temporary

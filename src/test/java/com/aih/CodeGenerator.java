@@ -17,7 +17,7 @@ public class CodeGenerator {
         String mapperLocation = "D:\\idea\\2023\\TeacherInfoManage\\src\\main\\resources\\mapper\\" + moduleName;
 //        String tableName = "academic_paper_audit,admin,college,education_experience_audit,honorary_award_audit," +
 //                "identity_card_audit,office,project_audit,software_audit,super_admin,teacher,topic_audit,work_experience_audit";
-        String tableName = "role,teacher_role";
+        String tableName = "request_college_change"; //需要生成的表名,用','分隔
         String tablePrefix = "";  //表的前缀
         FastAutoGenerator.create(url, username, password)
                 .globalConfig(builder -> {

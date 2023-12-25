@@ -5,12 +5,12 @@ import com.aih.controller.SuperAdminController;
 import com.aih.controller.TeacherController;
 import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
-import com.aih.custom.annotation.AuthAccess;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.Teacher;
-import com.aih.custom.exception.CustomException;
-import com.aih.custom.exception.CustomExceptionCodeMsg;
+import com.aih.common.exception.CustomException;
+import com.aih.common.exception.CustomExceptionCodeMsg;
+import com.aih.utils.vo.RoleType;
 import com.aih.utils.vo.User;
 import io.jsonwebtoken.Claims;
 import lombok.extern.slf4j.Slf4j;
@@ -42,6 +42,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
 
         String token  = request.getHeader("token");
 //        log.debug(request.getRequestURI() + "需要验证： " + token);
+        log.debug("================================token{}",token);
         if(token == null){
             throw new CustomException(CustomExceptionCodeMsg.TOKEN_INVALID);
             /*response.setContentType("application/json;charset=utf-8");
@@ -55,15 +56,22 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
             String entityType = (String) claims.get("entityType");
             User user = new User(); // 创建一个User实例
 //            user.setEntityType(entityType);
+            log.debug("================================entityType{}",entityType);
             switch (entityType) {
                 case "Teacher":
                     Teacher teacher = jwtUtil.parseToken(token, Teacher.class);
+                    if (teacher.getIsAuditor()==0){
+                        user.setRole(RoleType.TEACHER);
+                    }else {
+                        user.setRole(RoleType.AUDITOR);
+                    }
                     user.setId(teacher.getId());
                     user.setOid(teacher.getOid());
                     user.setCid(teacher.getCid());
                     user.setCreateDate(teacher.getCreateDate());
                     break;
                 case "Admin": {
+                    user.setRole(RoleType.ADMIN);
                     Admin admin = jwtUtil.parseToken(token, Admin.class);
                     user.setId(admin.getId());
                     user.setCid(admin.getCid());
@@ -71,6 +79,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
                     break;
                 }
                 case "SuperAdmin": {
+                    user.setRole(RoleType.SUPER_ADMIN);
                     SuperAdmin admin = jwtUtil.parseToken(token, SuperAdmin.class);
                     user.setId(admin.getId());
                     break;

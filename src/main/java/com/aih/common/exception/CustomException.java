@@ -1,4 +1,4 @@
-package com.aih.custom.exception;
+package com.aih.common.exception;
 
 public class CustomException extends RuntimeException{
     private Integer code = 500;

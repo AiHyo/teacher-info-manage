@@ -27,7 +27,14 @@ public interface TeacherMapper extends BaseMapper<Teacher> {
     List<Long> getTeacherIdsByOid(Long oid);
 
     @Select("select id from teacher where oid = #{oid} and is_auditor = 1")
-    List<Long> getAuditorIdsByOid(Long oid);
+    List<Long> getAuditorPowerIdsByOid(Long oid);
 
+    @Select("select id from teacher where oid = #{oid} and is_auditor = 0")
+    List<Long> getCanAuditTidsByOid(Long oid);
 
+    @Select("select id from teacher where cid = #{cid} and is_auditor = 1")
+    List<Long> getCanAuditTidsByCid(Long cid);
+
+    @Select("select teacher_name from teacher where id = #{tid}")
+    String getTeacherNameByTid(Long tid);
 }

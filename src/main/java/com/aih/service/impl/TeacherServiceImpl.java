@@ -1,26 +1,41 @@
 package com.aih.service.impl;
 
-import com.aih.custom.exception.CustomException;
-import com.aih.custom.exception.CustomExceptionCodeMsg;
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.poi.excel.ExcelUtil;
+import cn.hutool.poi.excel.ExcelWriter;
+import com.aih.common.exception.CustomException;
+import com.aih.common.exception.CustomExceptionCodeMsg;
+import com.aih.entity.vo.AuditInfoDto;
+import com.aih.entity.vo.TeacherDto;
+import com.aih.entity.vo.TeacherExcelModel;
+import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.*;
-import com.aih.entity.vo.TeacherDto;
+import com.aih.entity.vo.TeacherDetailDto;
 import com.aih.mapper.*;
 import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.deepoove.poi.XWPFTemplate;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.ResourceUtils;
 
 import javax.annotation.Resource;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -38,14 +53,16 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     private PasswordEncoder passwordEncoder;
     @Autowired
     private JwtUtil jwtUtil;
-
-
+    @Autowired
+    private MyUtil myUtil;
     @Resource
     private IdentityCardAuditMapper identityCardAuditMapper;
     @Autowired
     private CollegeMapper collegeMapper;
     @Autowired
     private OfficeMapper officeMapper;
+    @Autowired
+    private AdminMapper adminMapper;
     @Autowired
     private EducationExperienceAuditServiceImpl educationExperienceService;
     @Autowired
@@ -60,6 +77,17 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     private ProjectAuditServiceImpl projectService;
     @Autowired
     private SoftwareAuditServiceImpl softwareService;
+
+
+    @Value("${excel.file-name}")
+    String defaultExcelName;
+    @Value("${file.root-path}")
+    String rootPath;
+    @Value("${file.template-file}")
+    String templateFile;
+    @Value("${file.temporary-path}")
+    String temporaryPath;
+    private final String sep = File.separator;
 
     @Override
     public Map<String, Object> login(Teacher teacher) {
@@ -83,35 +111,35 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override//根据tid获取教师信息TeacherDto的
-    public TeacherDto queryTeacherDtoByTid(Long tid) {
+    public TeacherDetailDto queryTeacherDtoByTid(Long tid) {
         Teacher findTeacher = this.baseMapper.selectById(tid);
         findTeacher.setPassword(null);//将密码置空
-        TeacherDto teacherDto = new TeacherDto();
-        BeanUtils.copyProperties(findTeacher,teacherDto);//将loginTeacher的属性复制到teacherDto
+        TeacherDetailDto teacherDetailDto = new TeacherDetailDto();
+        BeanUtils.copyProperties(findTeacher, teacherDetailDto);//将findTeacher的属性复制到teacherDto
 
         //获取学院和科室名称
-        teacherDto.setCollegeName(collegeMapper.getCollegeNameByCid(findTeacher.getCid()));
-        teacherDto.setOfficeName(officeMapper.getOfficeNameByOid(findTeacher.getOid()));
+        teacherDetailDto.setCollegeName(collegeMapper.getCollegeNameByCid(findTeacher.getCid()));
+        teacherDetailDto.setOfficeName(officeMapper.getOfficeNameByOid(findTeacher.getOid()));
         //获取职务
-        teacherDto.setRoleList(this.baseMapper.getRoleNameByTeacherId(tid));
-
-        //获取正在显示的身份证资料
-        teacherDto.setIdentityCard(this.queryIdentityCardShowByTid(tid));
+        List<String> roleNameByTeacherId = this.baseMapper.getRoleNameByTeacherId(tid);
+        teacherDetailDto.setRoleList(String.join(",", roleNameByTeacherId));
+/*        //获取正在显示的身份证资料
+        teacherDetailDto.setIdentityCard(this.queryIdentityCardShowByTid(tid));*/
         //教育经历
-        teacherDto.setEducationExperienceList(this.queryEducationExperienceShowListByTid(tid));
+        teacherDetailDto.setEducationExperienceList(this.queryEducationExperienceShowListByTid(tid));
         //工作经历
-        teacherDto.setWorkExperienceList(this.queryWorkExperienceShowListByTid(tid));
+        teacherDetailDto.setWorkExperienceList(this.queryWorkExperienceShowListByTid(tid));
         //荣誉奖励
-        teacherDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTid(tid));
+        teacherDetailDto.setHonoraryAwardList(this.queryHonoraryAwardShowListByTid(tid));
         //课题
-        teacherDto.setTopicList(this.queryTopicShowListByTeacherId(tid));
+        teacherDetailDto.setTopicList(this.queryTopicShowListByTeacherId(tid));
         //论文
-        teacherDto.setAcademicPaperList(this.queryAcademicPaperShowListByTeacherId(tid));
+        teacherDetailDto.setAcademicPaperList(this.queryAcademicPaperShowListByTeacherId(tid));
         //项目
-        teacherDto.setProjectList(this.queryProjectShowListByTeacherId(tid));
+        teacherDetailDto.setProjectList(this.queryProjectShowListByTeacherId(tid));
         //软件著作
-        teacherDto.setSoftwareList(this.querySoftwareShowListByTeacherId(tid));
-        return teacherDto;
+        teacherDetailDto.setSoftwareList(this.querySoftwareShowListByTeacherId(tid));
+        return teacherDetailDto;
     }
 
     @Override
@@ -120,44 +148,292 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     }
 
     @Override
-    public Page<Teacher> getTeacherList(Page<Teacher> pageInfo, Integer pageNum, Integer pageSize, String teacherName, Integer gender, String ethnic, String birthplace, String address) {
+    public Page<TeacherDto> getTeacherList(Integer pageNum, Integer pageSize, String teacherName, Integer gender, String ethnic, String birthplace, String address) {
+        Page<Teacher> pageInfo = new Page<>(pageNum, pageSize);
         Long oid = UserInfoContext.getUser().getOid();
         LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Teacher::getOid,oid);//对应教研室下的所有
-        if (teacherName!=null){
-            queryWrapper.like(Teacher::getTeacherName,teacherName);
+        queryWrapper.eq(Teacher::getOid,oid);//对应办公室下的所有
+        queryWrapper.ne(Teacher::getId, UserInfoContext.getUser().getId());//排除id为自己的
+        queryWrapper.like(StringUtils.isNotBlank(teacherName),Teacher::getTeacherName,teacherName);
+        queryWrapper.eq(gender != null,Teacher::getGender,gender);
+        queryWrapper.like(StringUtils.isNotBlank(ethnic),Teacher::getEthnic,ethnic);
+        queryWrapper.like(StringUtils.isNotBlank(birthplace),Teacher::getNativePlace,birthplace);
+        queryWrapper.like(StringUtils.isNotBlank(address),Teacher::getAddress,address);
+        this.baseMapper.selectPage(pageInfo,queryWrapper);
+        List<TeacherDto> collect = pageInfo.getRecords().stream().map((item) -> {
+            TeacherDto teacherDto = new TeacherDto();
+            BeanUtils.copyProperties(item, teacherDto);
+            teacherDto.setCollegeName(collegeMapper.getCollegeNameByCid(item.getCid()));
+            teacherDto.setOfficeName(officeMapper.getOfficeNameByOid(item.getOid()));
+            teacherDto.setRoleList(String.join(",", this.baseMapper.getRoleNameByTeacherId(item.getId())));
+            return teacherDto;
+        }).collect(Collectors.toList());
+        Page<TeacherDto> pageDtoInfo = new Page<>(pageNum, pageSize);
+        BeanUtils.copyProperties(pageInfo,pageDtoInfo,"records");
+        pageDtoInfo.setRecords(collect);
+        return pageDtoInfo;
+    }
+
+    @Override
+    public Page<AuditInfoDto> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
+        Long uid = UserInfoContext.getUser().getId();
+        Teacher cur_teacher = this.baseMapper.selectById(uid);
+        //获取审核员有权限审核的tidList
+        List<Long> auditorCanAuditTids = myUtil.getAuditorCanAuditTids();
+        if(auditorCanAuditTids.isEmpty()){
+            return null;
         }
-        if (gender != null) {
-            queryWrapper.eq(Teacher::getGender,gender);
+        //封装所有的审核信息
+        List<AuditInfoDto> all_auditInfoDtoList = new ArrayList<AuditInfoDto>();
+        // === AcademicPaperAudit ===
+        LambdaQueryWrapper<AcademicPaperAudit> queryWrapper_academicPaper = new LambdaQueryWrapper<>();
+        queryWrapper_academicPaper
+                .in(AcademicPaperAudit::getTid, auditorCanAuditTids)
+                .eq(auditStatus!=null,AcademicPaperAudit::getAuditStatus, auditStatus)
+                .ge(AcademicPaperAudit::getCreateTime, cur_teacher.getCreateDate())//上任以来(针对未审核的)
+                .eq(onlyOwn,AcademicPaperAudit::getTid, cur_teacher.getId());//只看自己的(针对已审核的)
+        if (auditStatus != null && auditStatus != 0){//选出没有在删除角色中的
+            queryWrapper_academicPaper.and( wrapper -> wrapper
+                    .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                    .or().isNull(AcademicPaperAudit::getDeleteRoles));
         }
-        if (ethnic!=null){
-            queryWrapper.like(Teacher::getEthnic,ethnic);
-        }
-        if (birthplace!=null){
-            queryWrapper.like(Teacher::getBirthplace,birthplace);
-        }
-        if (address!=null){
-            queryWrapper.like(Teacher::getAddress,address);
-        }
-        return this.baseMapper.selectPage(pageInfo,queryWrapper);
+        List<AcademicPaperAudit> academicPaperAuditList = academicPaperService.list(queryWrapper_academicPaper);
+        log.info("academicPaperAuditList={}", academicPaperAuditList);
+        List<AuditInfoDto> one_auditInfoDtoList = academicPaperAuditList.stream().map((item -> {
+            AuditInfoDto dto = new AuditInfoDto();
+            dto.setAuditType("论文材料");
+            Integer _auditStatus = item.getAuditStatus();
+            dto.setAuditStatus(_auditStatus == 1 ? "审核通过": _auditStatus == 2 ? "审核未通过": "待审核");
+            dto.setCreateTime(item.getCreateTime());
+            dto.setAuditTime(item.getAuditTime());
+            Teacher teacher = this.baseMapper.selectById(item.getTid());
+            if (teacher != null) {
+                dto.setTeacherName(teacher.getTeacherName());
+                dto.setOfficeName(officeMapper.getOfficeNameByOid(teacher.getOid()));
+                dto.setCollegeName(collegeMapper.getCollegeNameByCid(teacher.getCid()));
+            }
+            dto.setAuditName(adminMapper.getAdminNameByAid(item.getAid()));
+            return dto;
+        })).collect(Collectors.toList());
+        all_auditInfoDtoList.addAll(one_auditInfoDtoList);
+        // === EducationExperienceAudit ===
+        // ……………………………………………………………………………………
+        // === OtherAudit ===
+        // === OtherAudit ===
+        // === OtherAudit ===
+        // === OtherAudit ===
+
+
+        Page<AuditInfoDto> pageInfo = new Page<>(pageNum, pageSize);
+        pageInfo.setRecords(all_auditInfoDtoList);
+        pageInfo.setTotal(all_auditInfoDtoList.size());
+        return pageInfo;
     }
 
 
-    //封装一个根据tid获取正在显示的身份证资料的方法
-    public IdentityCardAudit queryIdentityCardShowByTid(Long tid){
-        LambdaQueryWrapper<IdentityCardAudit> queryWrapper_identityCard = new LambdaQueryWrapper<>();
-        queryWrapper_identityCard.eq(IdentityCardAudit::getTid,tid);  //根据tid查询
-        queryWrapper_identityCard.eq(IdentityCardAudit::getAuditStatus,1);//审核通过
-        queryWrapper_identityCard.eq(IdentityCardAudit::getIsShow,1);     //正在显示
-        IdentityCardAudit identityCard = identityCardAuditMapper.selectOne(queryWrapper_identityCard);
-        return identityCard;
-    }
 
     @Override
     public List<String> getRoleListByTid(Long id) {
         return this.baseMapper.getRoleNameByTeacherId(id);
     }
 
+    @Override
+    public XWPFTemplate getWordRender(Teacher teacher) throws IOException {
+        //获取模板
+        File templateFile = ResourceUtils.getFile(this.templateFile);
+        //准备数据
+        Map<String, Object> map = new HashMap<>();
+        map.put("userName", teacher.getUsername());
+        map.put("teacherName",teacher.getTeacherName());
+        map.put("createDate",teacher.getCreateDate());
+        List<String> arrays = this.getRoleListByTid(teacher.getId());
+        map.put("arrays", String.join("\n", arrays));
+        //读取模板内容
+        XWPFTemplate compile = XWPFTemplate.compile(templateFile);
+        //渲染数据到模板
+        return compile.render(map);
+    }
+
+    //获取ExcelWriter excel写入器
+    @Override
+    public ExcelWriter getMyExcelWriter(List<Teacher> teacherList, String fileName, List<String> fieldList) {
+        //获取数据
+        List<TeacherExcelModel> teacherExcelModelList = teacherList.stream().map((teacher -> {
+            Long tid = teacher.getId();
+            Long cid = teacher.getCid();
+            Long oid = teacher.getOid();
+            TeacherExcelModel teacherExcelModel = new TeacherExcelModel(teacher);
+            teacherExcelModel.setRoleList(this.getRoleListByTid(tid).toString().replaceAll("^\\[|\\]$", ""));//去掉首尾的中括号
+            log.info(teacherExcelModel.getRoleList());
+            teacherExcelModel.setCollegeName(collegeMapper.getCollegeNameByCid(cid));
+            teacherExcelModel.setOfficeName(officeMapper.getOfficeNameByOid(oid));
+/*            IdentityCardAudit identityCardAudit = this.queryIdentityCardShowByTid(tid);
+            if (identityCardAudit != null) {
+                teacherExcelModel.setIdentityCard(identityCardAudit.getIdNumber());
+            }*/
+            return teacherExcelModel;//返回的是TeacherExcelModel的集合
+        })).collect(Collectors.toList());
+        // 创建无敌ExcelWriter writer
+        ExcelWriter writer = ExcelUtil.getWriter(true);
+        //自定义标题别名
+        if (fieldList != null && !fieldList.isEmpty()) {
+            int count = 0;
+            if (fieldList.contains("id")) {
+                writer.addHeaderAlias("id", "教师id");
+                count += 1;
+            }
+            if (fieldList.contains("teacherName")) {
+                writer.addHeaderAlias("teacherName", "教师姓名");
+                count += 1;
+            }
+            if (fieldList.contains("username")) {
+                writer.addHeaderAlias("username", "登录账号");
+                count += 1;
+            }
+            if (fieldList.contains("gender")) {
+                writer.addHeaderAlias("gender", "性别");
+                count += 1;
+            }
+            if (fieldList.contains("identityCard")) {
+                writer.addHeaderAlias("identityCard", "身份证号");
+                count += 1;
+            }
+            if (fieldList.contains("roleList")) {
+                writer.addHeaderAlias("roleList", "职务");
+                count += 1;
+            }
+            if (fieldList.contains("ethnic")) {
+                writer.addHeaderAlias("ethnic", "民族");
+                count += 1;
+            }
+            if (fieldList.contains("birthplace")) {
+                writer.addHeaderAlias("birthplace", "籍贯");
+                count += 1;
+            }
+            if (fieldList.contains("address")) {
+                writer.addHeaderAlias("address", "住址");
+                count += 1;
+            }
+            if (fieldList.contains("phone")) {
+                writer.addHeaderAlias("phone", "电话号码");
+                count += 1;
+            }
+
+            if (fieldList.contains("collegeName")) {
+                writer.addHeaderAlias("collegeName", "学院");
+                count += 1;
+            }
+            if (fieldList.contains("officeName")) {
+                writer.addHeaderAlias("officeName", "教研室");
+                count += 1;
+            }
+            if (fieldList.contains("isAuditor")) {
+                writer.addHeaderAlias("isAuditor", "审核员");
+                count += 1;
+            }
+            if (fieldList.contains("startDate")) {
+                writer.addHeaderAlias("startDate", "入校日期");
+                count += 1;
+            }
+            log.error("count={}", count);
+            log.error(fileName);
+            writer.merge(count - 1, fileName);//合并标题
+        } else {
+            writer.addHeaderAlias("id", "教师id");
+            writer.addHeaderAlias("teacherName", "教师姓名");
+            writer.addHeaderAlias("username", "登录账号");
+            writer.addHeaderAlias("gender", "性别");
+            writer.addHeaderAlias("identityCard", "身份证号");
+            writer.addHeaderAlias("roleList", "职务");
+            writer.addHeaderAlias("ethnic", "民族");
+            writer.addHeaderAlias("birthplace", "籍贯");
+            writer.addHeaderAlias("address", "住址");
+            writer.addHeaderAlias("phone", "电话号码");
+            writer.addHeaderAlias("collegeName", "学院");
+            writer.addHeaderAlias("officeName", "教研室");
+            writer.addHeaderAlias("isAuditor", "审核员");
+            writer.addHeaderAlias("startDate", "入校日期");
+            writer.merge(13, fileName);
+        }
+        log.info("teacherExcelList={}", teacherExcelModelList);
+        //只写出加了别名的字段
+        writer.setOnlyAlias(true);
+        writer.write(teacherExcelModelList, true);//标题行true
+        return writer;
+    }
+
+
+    //获取excel文件
+    @Override
+    public File getMyExcelFile(List<Teacher> teacherList, List<String> fieldList) {
+        ExcelWriter writer = this.getMyExcelWriter(teacherList, defaultExcelName, fieldList);
+        File excelFile = new File(temporaryPath + sep + defaultExcelName + ".xlsx");
+        writer.flush(excelFile);//直接将数据写入到文件中,并关闭ExcelWriter对象
+        /*writer.flush(FileUtil.getOutputStream(excelFile), true);//true 关闭输出流*/
+        writer.close();//双重保险
+        return excelFile;
+    }
+
+    //获取word集合
+    @Override
+    public File getMyWordFolder(List<Teacher> teacherList) throws IOException {
+        //创建临时word集合
+        File tempWordFolder = new File(temporaryPath + sep + "word集合");
+        FileUtil.mkdir(tempWordFolder);
+        for (Teacher teacher : teacherList) {
+            //word集合下新建以xx教师命名的word文件
+            String tempTeacherWordPath = tempWordFolder + sep + teacher.getTeacherName() + ".docx";
+            FileUtil.touch(tempTeacherWordPath);/////////if
+            //获取渲染好数据的word
+            XWPFTemplate render = this.getWordRender(teacher);
+            render.writeToFile(tempTeacherWordPath);
+            render.close();//双重保险
+        }
+        return tempWordFolder;
+    }
+
+    //获取教师附件文件夹
+    @Override
+    public File getTeacherAttachmentFolder(List<Teacher> teacherList, List<String> attachmentList) {
+        //创建临时教师附件文件夹
+        File tempTeacherAttachmentFolder = new File(temporaryPath + sep + "教师附件");
+        FileUtil.mkdir(tempTeacherAttachmentFolder);
+        for (Teacher teacher : teacherList) {
+            Long tid = teacher.getId();
+            //教师附件文件夹下新建以xx教师命名的目录
+            String tempTeacherPath = tempTeacherAttachmentFolder + sep + teacher.getTeacherName();//教师附件->教师名
+            FileUtil.mkdir(tempTeacherPath);//////////////////////////////////////////////////if
+
+            log.info("attachmentList={}", attachmentList);/////////////////////////////////iter
+            //找到该教师对应的文件夹       A
+            File findAcademicPaperFolder = new File(rootPath + sep + "academicPaper" + sep + tid);
+            FileUtil.mkdir(findAcademicPaperFolder);//防止不存在报错
+            //创建子文件夹               B
+            String tempAcademicPaperPath = tempTeacherPath + sep + "论文材料";//教师附件->教师名->论文材料
+            FileUtil.mkdir(tempAcademicPaperPath);
+            //copyContent(A,B)       A => b    复制A目录(下的文件) 到 B目录下,true表示覆盖
+            FileUtil.copyContent(findAcademicPaperFolder, new File(tempAcademicPaperPath), true);
+
+            /*  test 测试第二类信息附件*/
+            File findTestFile = new File(rootPath + sep + "test" + sep + tid);
+            FileUtil.mkdir(findTestFile);//防止不存在报错
+            String tempTestPath = tempTeacherPath + sep + "测试目录2";
+            FileUtil.mkdir(tempTestPath);
+            FileUtil.copyContent(findTestFile, new File(tempTestPath), true);
+        }
+        return tempTeacherAttachmentFolder;
+    }
+
+
+    //========================根据tid获取教师正在显示的各种信息========================
+    //身份证材料
+    public IdentityCardAudit queryIdentityCardShowByTid(Long tid){
+        LambdaQueryWrapper<IdentityCardAudit> queryWrapper_identityCard = new LambdaQueryWrapper<>();
+        queryWrapper_identityCard.eq(IdentityCardAudit::getTid,tid);  //根据tid查询
+        queryWrapper_identityCard.eq(IdentityCardAudit::getAuditStatus,1);//审核通过
+        queryWrapper_identityCard.eq(IdentityCardAudit::getIsShow,1);     //正在显示
+        return identityCardAuditMapper.selectOne(queryWrapper_identityCard);
+    }
     //教育经历
     private List<EducationExperienceAudit> queryEducationExperienceShowListByTid(Long tid){
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper_educationExperience = new LambdaQueryWrapper<>();
@@ -183,8 +459,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper_honoraryAward.eq(HonoraryAwardAudit::getAuditStatus,1);//审核通过
         queryWrapper_honoraryAward.eq(HonoraryAwardAudit::getIsShow,1);     //正在显示
         queryWrapper_honoraryAward.orderByAsc(HonoraryAwardAudit::getGetDate);  //按获得时间升序
-        List<HonoraryAwardAudit> honoraryAwardList = honoraryAwardService.list(queryWrapper_honoraryAward);
-        return honoraryAwardList;
+        return honoraryAwardService.list(queryWrapper_honoraryAward);
     }
     //课题
     private List<TopicAudit> queryTopicShowListByTeacherId(Long tid){
@@ -193,8 +468,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper_topic.eq(TopicAudit::getAuditStatus,1);//审核通过
         queryWrapper_topic.eq(TopicAudit::getIsShow,1);     //正在显示
         queryWrapper_topic.orderByAsc(TopicAudit::getStaDate);  //按开始时间升序
-        List<TopicAudit> topicList = topicService.list(queryWrapper_topic);
-        return topicList;
+        return topicService.list(queryWrapper_topic);
     }
     //论文
     private List<AcademicPaperAudit> queryAcademicPaperShowListByTeacherId(Long tid){
@@ -203,8 +477,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper_academicPaper.eq(AcademicPaperAudit::getAuditStatus,1);//审核通过
         queryWrapper_academicPaper.eq(AcademicPaperAudit::getIsShow,1);     //正在显示
         queryWrapper_academicPaper.orderByAsc(AcademicPaperAudit::getPublishDate);  //按发表时间升序
-        List<AcademicPaperAudit> academicPaperList = academicPaperService.list(queryWrapper_academicPaper);
-        return academicPaperList;
+        return academicPaperService.list(queryWrapper_academicPaper);
     }
     //项目
     private List<ProjectAudit> queryProjectShowListByTeacherId(Long tid){
@@ -213,8 +486,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper_project.eq(ProjectAudit::getAuditStatus,1);//审核通过
         queryWrapper_project.eq(ProjectAudit::getIsShow,1);     //正在显示
         queryWrapper_project.orderByAsc(ProjectAudit::getCompletionDate);  //按完成时间升序
-        List<ProjectAudit> projectList = projectService.list(queryWrapper_project);
-        return projectList;
+        return projectService.list(queryWrapper_project);
     }
     //软件著作
     private List<SoftwareAudit> querySoftwareShowListByTeacherId(Long tid){
@@ -223,7 +495,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper_software.eq(SoftwareAudit::getAuditStatus,1);//审核通过
         queryWrapper_software.eq(SoftwareAudit::getIsShow,1);     //正在显示
         queryWrapper_software.orderByAsc(SoftwareAudit::getCompletionDate);  //按完成时间升序
-        List<SoftwareAudit> softwareList = softwareService.list(queryWrapper_software);
-        return softwareList;
+        return softwareService.list(queryWrapper_software);
     }
 }

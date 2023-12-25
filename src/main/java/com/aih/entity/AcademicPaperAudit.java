@@ -56,9 +56,9 @@ public class AcademicPaperAudit implements Serializable {
     @TableField(fill = FieldFill.INSERT)
     private LocalDateTime createTime;
 
-    @ApiModelProperty("更新时间")
+    @ApiModelProperty("审核时间")
     @TableField(fill = FieldFill.UPDATE)
-    private LocalDateTime updateTime;
+    private LocalDateTime auditTime;
 
     @ApiModelProperty("审核员id")
     @TableField(fill = FieldFill.UPDATE)

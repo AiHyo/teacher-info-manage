@@ -18,12 +18,32 @@
     <properties>
         <java.version>1.8</java.version>
     </properties>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.springframework.boot</groupId>
+                <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!--<plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <configuration>
+                    <classpathScope>test</classpathScope>
+                </configuration>
+            </plugin>-->
+        </plugins>
+    </build>
+
+    <packaging>jar</packaging>
+
     <dependencies>
         <!-- web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
+
         <!-- mysql -->
         <dependency>
             <groupId>com.mysql</groupId>
@@ -92,15 +112,37 @@
             <artifactId>hutool-all</artifactId>
             <version>5.8.21</version>
         </dependency>
-        <!-- poi excel的依赖-->
+        <!-- poi-ooxml excel的依赖-->
         <dependency>
             <groupId>org.apache.poi</groupId>
             <artifactId>poi-ooxml</artifactId>
             <version>5.2.3</version>
         </dependency>
+        <!-- aop -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-aop</artifactId>
+        </dependency>
+
+        <!-- poi-tl word的依赖 -->
+        <dependency>
+            <groupId>com.deepoove</groupId>
+            <artifactId>poi-tl</artifactId>
+            <version>1.12.1</version>
+        </dependency>
+
+        <!-- sa-token  权限认证框架-->
+        <dependency>
+            <groupId>cn.dev33</groupId>
+            <artifactId>sa-token-spring-boot-starter</artifactId>
+            <version>1.35.0.RC</version>
+        </dependency>
+
+
+
 
         <!-- jackson -->
-        <dependency>
+        <!--<dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <version>2.15.2</version>
@@ -109,7 +151,8 @@
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>
             <version>2.15.2</version>
-        </dependency>
+        </dependency>-->
+
 
         <dependency>
             <groupId>org.springframework.boot</groupId>
@@ -122,24 +165,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-            </plugin>
-            <!--<plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
-                <configuration>
-                    <classpathScope>test</classpathScope>
-                </configuration>
-            </plugin>-->
-        </plugins>
-    </build>
-
-    <packaging>jar</packaging>
 
 </project>

@@ -1,7 +1,6 @@
 package com.aih.entity;
 
 import cn.hutool.core.annotation.Alias;
-import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.annotation.*;
 
 import java.io.Serializable;
@@ -12,9 +11,6 @@ import io.swagger.annotations.ApiModelProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
-
-import javax.annotation.Resource;
 
 /**
  * <p>
@@ -41,11 +37,11 @@ public class Teacher implements Serializable {
     @ApiModelProperty("姓名")
     private String teacherName;
 
-    @Alias("登录账号")
+//    @Alias("登录账号")
     @ApiModelProperty("登录账号")
     private String username;
 
-    @Alias("登陆密码")
+//    @Alias("登陆密码")
     @ApiModelProperty("登录密码")
     private String password;
 
@@ -59,7 +55,7 @@ public class Teacher implements Serializable {
 
     @Alias("籍贯")
     @ApiModelProperty("籍贯")
-    private String birthplace;
+    private String nativePlace;
 
     @Alias("住址")
     @ApiModelProperty("住址")
@@ -77,21 +73,28 @@ public class Teacher implements Serializable {
     @ApiModelProperty("所属教研室id")
     private Long oid;
 
+    @ApiModelProperty("文化程度")
+    private String educationDegree;
+
+    @ApiModelProperty("身份证号")
+    private String idNumber;
+
     @Alias("审核员")
     @ApiModelProperty("是否审核员 0:不是 1:是")
     private Integer isAuditor;
 
-    @Alias("注册日期")
-    @ApiModelProperty("生效日期")
+    @Alias("入校日期")
+    @ApiModelProperty("入校日期")
+    private LocalDate startDate;
+
+    @Alias("权限生效日期")
+    @ApiModelProperty("权限生效日期")
     @TableField(fill = FieldFill.INSERT)
     private LocalDate createDate;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic
     private Integer deleted;
-
-    @ApiModelProperty("备用1")
-    private String test1;
 
     @ApiModelProperty("备用2")
     private String test2;

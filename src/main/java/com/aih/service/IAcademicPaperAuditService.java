@@ -1,6 +1,7 @@
 package com.aih.service;
 
 import com.aih.entity.AcademicPaperAudit;
+import com.aih.entity.vo.AcademicPaperDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -14,19 +15,21 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit> {
 
-    Page<AcademicPaperAudit> queryRecordsByCid(Page<AcademicPaperAudit> pageInfo, Integer auditStatus, String title);
+    Page<AcademicPaperDto> queryRecordsByCid(Integer pageNum, Integer pageSize, Integer auditStatus, String title, Boolean onlyOwn);
 
-    Page<AcademicPaperAudit> queryRecordsByOid(Page<AcademicPaperAudit> pageInfo, Integer auditStatus, String title);
-
-
-    void addDeleteRoles(Long id);
+    Page<AcademicPaperDto> queryRecordsByOid(Integer pageNum, Integer pageSize, Integer auditStatus, String title, Boolean onlyOwn);
 
 
-    AcademicPaperAudit queryById(Long id);
+    String deleteRecord(Long id);
+
+
+    AcademicPaperDto queryDtoById(Long id);
 
     void passAcademicPaperAudit(AcademicPaperAudit academicPaper);
 
     void rejectAcademicPaperAudit(AcademicPaperAudit academicPaper);
 
-    Page<AcademicPaperAudit> queryOwnRecord(Page<AcademicPaperAudit> pageInfo, Integer auditStatus, String title);
+    Page<AcademicPaperDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String title);
+
+    void deleteOwnInfo(Long id);
 }

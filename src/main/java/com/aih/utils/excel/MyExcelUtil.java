@@ -1,21 +1,15 @@
 package com.aih.utils.excel;
 
 import cn.hutool.core.io.IoUtil;
-import cn.hutool.core.lang.Dict;
 import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
-import com.aih.custom.exception.CustomException;
-import com.aih.custom.exception.CustomExceptionCodeMsg;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URLEncoder;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 public class MyExcelUtil {
 

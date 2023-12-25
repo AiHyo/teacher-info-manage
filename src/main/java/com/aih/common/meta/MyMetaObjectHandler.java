@@ -25,19 +25,18 @@ public class MyMetaObjectHandler implements MetaObjectHandler {
             metaObject.setValue("createDate", LocalDate.now());
             return ;
         }
-
+        //===========================审核材料信息类===================================
 //        metaObject.setValue("createDate", LocalDate.now());
         metaObject.setValue("createTime", LocalDateTime.now());
         metaObject.setValue("tid", UserInfoContext.getUser().getId());
         metaObject.setValue("auditStatus",0); //新增审核数据,默认待审核
         metaObject.setValue("isShow",0);      //待审核数据,默认非有效显示
         metaObject.setValue("deleteRoles",",");//默认删除角色为空
-
     }
 
     @Override
     public void updateFill(MetaObject metaObject) {
-        metaObject.setValue("updateTime", LocalDateTime.now());
+        metaObject.setValue("auditTime", LocalDateTime.now());
         metaObject.setValue("aid", UserInfoContext.getUser().getId());
     }
 }

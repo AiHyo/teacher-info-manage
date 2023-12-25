@@ -2,32 +2,31 @@ package com.aih.controller;
 
 import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.ArrayUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.core.util.ZipUtil;
-import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
+import com.aih.common.aop_log.LogAnnotation;
 import com.aih.entity.*;
-import com.aih.entity.vo.TeacherDto;
-import com.aih.entity.vo.TeacherExcelModel;
+import com.aih.entity.vo.*;
 import com.aih.mapper.CollegeMapper;
 import com.aih.mapper.OfficeMapper;
-import com.aih.service.IAdminService;
-import com.aih.service.ITeacherService;
-import com.aih.custom.exception.CustomException;
-import com.aih.custom.exception.CustomExceptionCodeMsg;
+import com.aih.mapper.RequestCollegeChangeMapper;
+import com.aih.service.*;
+import com.aih.common.exception.CustomException;
+import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.deepoove.poi.XWPFTemplate;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
@@ -36,7 +35,6 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 管理员 Controller
@@ -50,6 +48,8 @@ import java.util.stream.Collectors;
 public class AdminController {
 
     @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
     private IAdminService adminService;
     @Autowired
     private ITeacherService teacherService;
@@ -57,11 +57,30 @@ public class AdminController {
     private CollegeMapper collegeMapper;
     @Autowired
     private OfficeMapper officeMapper;
+    @Autowired
+    private ICollegeService collegeService;
+    @Autowired
+    private IOfficeService officeService;
+    @Autowired
+    private RequestCollegeChangeMapper requestCollegeChangeMapper;
+    @Autowired
+    private MyUtil myUtil;
     @Resource //@Autowired
     private HttpServletResponse response;
 
+    private final String sep = File.separator;
+    @Value("${file.root-path}")
+    String rootPath;
+    @Value("${file.temporary-path}")
+    String temporaryPath;
+    @Value("${excel.file-name}")
+    String defaultExcelName;
+    @Value("${default-password}")
+    String defaultPassword;
+
+
     /**
-     * 登录成功返回token
+     * 接收username和password。登录成功返回token
      */
     @ApiOperation("管理员登录")
     @PostMapping("/login")
@@ -85,6 +104,27 @@ public class AdminController {
     }
 
 
+    /**
+     * 修改自己的密码
+     * @param oldPassword 原本密码
+     * @param newPassword 新密码
+     */
+    @ApiOperation("修改密码")
+    @PutMapping("/updatePassword")
+    public R<?> updatePassword(@RequestParam("oldPassword") String oldPassword,
+                               @RequestParam("newPassword") String newPassword) {
+        Long uid = UserInfoContext.getUser().getId();
+        Admin admin = adminService.getById(uid);
+        if (!passwordEncoder.matches(oldPassword, admin.getPassword())) { // 旧密码不正确
+            throw new CustomException(CustomExceptionCodeMsg.OLD_PASSWORD_ERROR);
+        }
+        //修改密码
+        admin.setPassword(passwordEncoder.encode(newPassword));
+        adminService.updateById(admin);
+        return R.success("修改密码成功");
+    }
+
+
     @ApiOperation("修改个人信息")
     @PutMapping("/update")
     public R<?> update(@RequestBody Admin admin) {
@@ -93,63 +133,67 @@ public class AdminController {
     }
 
     /**
-     * 路径参数 0:设为非审核员  1:设为审核员  传入ids/token非法 抛出自定义异常
+     * isAuditor/ids非法 抛出自定义信息。审核员权限改动了的教师,权限生效时间createDate会被更新成当前时间
+     * @param ids 教师id列表
+     * @param isAuditor 路径参数 0:设为非审核员  1:设为审核员
      */
-    @ApiOperation("批量修改审核员权限")
+    @ApiOperation("(批量)修改审核员权限")
     @PostMapping("/auditorPower/{isAuditor}")
     public R<String> auditorPower(@PathVariable Integer isAuditor, @RequestParam List<Long> ids) {
         //判断ids是否合法
-        LambdaQueryWrapper<Teacher> queryWrapper_1 = new LambdaQueryWrapper<>();
-        queryWrapper_1.in(Teacher::getId, ids);
-        long count = teacherService.count(queryWrapper_1);
-        if (count != ids.size()) {
-            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-        }
-        Long cid = UserInfoContext.getUser().getCid();
-        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Teacher::getId, ids);
-        List<Teacher> teachers = teacherService.list(queryWrapper);
-        for (Teacher teacher : teachers) {
-            if (!teacher.getCid().equals(cid)) {
-                throw new CustomException(CustomExceptionCodeMsg.UPDATE_AUDIT_POWER_ERROR);
-            }
+        this.checkTeacherIds(ids);
+        //判断isAuditor是否合法
+        if (isAuditor != 0 && isAuditor != 1) {
+            throw new CustomException(CustomExceptionCodeMsg.ISAUDITOR_ILLEGAL);
         }
         adminService.updateIsAuditor(isAuditor, ids);
         return R.success("更改审核员权限成功");
     }
 
-    /**
-     * @param officeName 可选 模糊查询教研室名称
-     */
+    @ApiOperation("(批量)重置密码")
+    @PutMapping("/resetPassword")
+    public R<String> resetPassword(@RequestParam List<Long> ids,@RequestParam(required = false) String password) {
+        if (StrUtil.isBlank(password)) {
+            password = defaultPassword;
+        }
+        //判断ids是否合法
+        this.checkTeacherIds(ids);
+        adminService.resetPassword(ids,password);
+        return R.success("重置密码成功");
+    }
+
+/*
     @ApiOperation("查询学院下的教研室")
     @GetMapping("/getOfficeList")
     public R<List<Office>> getOfficeList(@RequestParam(value = "officeName", required = false) String officeName) {
         Long cid = UserInfoContext.getUser().getCid();
         List<Office> officeList = officeMapper.getOfficeList(cid, officeName);
         return R.success(officeList);
-    }
+    }*/
 
     /**
-     * 可选模糊查询 keyword: 教研室/教师名称
+     * 可选模糊查询 keyword: 教研室/教师名称,其它都是对应教师属性的模糊查询
      */
     @ApiOperation("查询学院下的教师")
     @GetMapping("/getTeacherList")
-    public R<Page<Teacher>> getTeacherList(@RequestParam("pageNum") Integer pageNum,
-                                           @RequestParam("pageSize") Integer pageSize,
-                                           @RequestParam(value = "keyword", required = false) String keyword,
-                                           @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
-                                           @RequestParam(value = "gender", required = false) Integer gender,
-                                           @RequestParam(value = "ethnic", required = false) String ethnic,
-                                           @RequestParam(value = "birthplace", required = false) String birthplace,
-                                           @RequestParam(value = "address", required = false) String address) {
-        Page<Teacher> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(adminService.getTeacherList(pageInfo, keyword, isAuditor, gender, ethnic, birthplace, address));
+    public R<Page<TeacherDto>> getTeacherList(@RequestParam("pageNum") Integer pageNum,
+                                              @RequestParam("pageSize") Integer pageSize,
+                                              @RequestParam(value = "keyword", required = false) String keyword,
+                                              @RequestParam(value = "oid", required = false) Long oid,
+                                              @RequestParam(value = "officeName", required = false) String officeName,
+                                              @RequestParam(value = "teacherName", required = false) String teacherName,
+                                              @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
+                                              @RequestParam(value = "gender", required = false) Integer gender,
+                                              @RequestParam(value = "ethnic", required = false) String ethnic,
+                                              @RequestParam(value = "birthplace", required = false) String birthplace,
+                                              @RequestParam(value = "address", required = false) String address) {
+        return R.success(adminService.getTeacherList(pageNum,pageSize, keyword, oid,officeName,teacherName,isAuditor, gender, ethnic, birthplace, address));
     }
 
 
     @ApiOperation("查看教师详细信息")
     @GetMapping("/getTeacherInfo/{tid}")
-    public R<TeacherDto> getTeacherInfo(@PathVariable Long tid) {
+    public R<TeacherDetailDto> getTeacherInfo(@PathVariable Long tid) {
         //判断权限
         Teacher findTeacher = teacherService.getById(tid);
         if (findTeacher == null) {
@@ -161,9 +205,256 @@ public class AdminController {
         return R.success(teacherService.queryTeacherDtoByTid(tid));
     }
 
+    /**
+     * 查询的是所有类型的信息,统一部分内容检验auditStatus是否合法,不合法抛出自定义信息
+     * @param pageNum  当前页码
+     * @param pageSize 每页大小
+     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
+     * @param onlyOwn 布尔类型(可选)只看自己的,默认false
+     * @return 每条数据包含：审核类型、审核对象id、审核状态、创建时间、审核时间、教师姓名、教研室名称、学院名称
+     */
+    @ApiOperation("[预览]查询管理学院下所有的审核员审核记录")
+    @GetMapping("/getAuditList")
+    public R<Page<AuditInfoDto>> getAuditList(@RequestParam("pageNum") Integer pageNum,
+                                              @RequestParam("pageSize") Integer pageSize,
+                                              @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+                                              @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+        if(auditStatus!=null){
+            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
+        }
+        return R.success(adminService.getAuditList(pageNum,pageSize, auditStatus,onlyOwn));
+    }
 
-    /////////////////////////////////////////////excel/////////////////////////////////////////
+    //根据ids删除教师
+/**
+     * 根据ids删除教师,检验ids是否合法,不合法抛出自定义信息
+     * @param ids 教师id列表
+     */
+    @ApiOperation("删除教师")
+    @DeleteMapping("/deleteTeacher")
+    public R<?> deleteTeacher(@RequestParam List<Long> ids) {
+        //判断ids是否合法
+        this.checkTeacherIds(ids);
+        teacherService.removeByIds(ids);
+        return R.success("删除教师成功");
+    }
 
+    // ============================= 办公室 =============================
+    @ApiOperation("查看学院下办公室")
+    @GetMapping("/getAllOffice")
+    public R<Page<OfficeDto>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
+                                              @RequestParam("pageSize") Integer pageSize,
+                                              @RequestParam(value = "officeName", required = false) String officeName){
+        return R.success(officeService.getAllOffice(pageNum,pageSize,officeName));
+    }
+    /**
+     * 在当前学院添加办公室
+     * @param officeName 新办公室名
+     */
+    @ApiOperation("添加办公室")
+    @PostMapping("/addOffice")
+    public R<?> addOffice(@RequestParam String officeName){
+        Office office = new Office();
+        office.setOfficeName(officeName);
+        office.setCid(UserInfoContext.getUser().getCid());
+        officeService.save(office);
+        return R.success("添加成功");
+    }
+
+    /**
+     * 根据id修改办公室名称。id不存在/不是自己学院的,不存在抛出自定义信息
+     * @param id    办公室id
+     * @param officeName 办公室新名称
+     * @return
+     */
+    @ApiOperation("修改办公室名称")
+    @PutMapping("/updateOfficeName")
+    public R<?> updateOfficeName(@RequestParam("id") Long id,
+                                 @RequestParam("officeName") String officeName){
+        Office findOffice = officeMapper.selectById(id);
+        if (findOffice == null) {
+            throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
+        }
+        if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+
+        findOffice.setOfficeName(officeName);
+        officeService.updateById(findOffice);
+        return R.success("修改成功");
+    }
+
+    /**
+     * 根据id删除办公室,id不存在/不是自己学院的,抛出自定义异常信息
+     * @param id 办公室的id
+     */
+    @ApiOperation("删除办公室")
+    @DeleteMapping("/deleteOffice/{id}")
+    public R<?> deleteOffice(@PathVariable Long id){
+        //判断id是否存在
+        Office findOffice = officeMapper.selectById(id);
+        if (findOffice == null) {
+            throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
+        }
+        //判断是否是自己学院的办公室
+        if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+        //判断没有教师是该办公室的才可以删除
+        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Teacher::getOid,id);
+        long count = teacherService.count(queryWrapper);
+        if (count!=0) {
+            throw new CustomException(CustomExceptionCodeMsg.OFFICE_DELETE_ERROR);
+        }
+        officeMapper.deleteById(id);
+        return R.success("删除成功");
+    }
+    // ================================ 申请教师换学院 ================================
+    @ApiOperation("查看所有学院")
+    @GetMapping("/getAllCollege")
+    public R<Page<College>> getAllCollege(@RequestParam("pageNum") Integer pageNum,
+                                          @RequestParam("pageSize") Integer pageSize){
+        Page<College> page = new Page<>(pageNum, pageSize);
+        return R.success(collegeService.page(page));
+    }
+    //申请tid换学院到新的cid
+    /**
+     * 自动填充oldAid+oldCid+createTime+auditStatus。如果(tid不存在/不属于自己学院)/(newCid不存在/是自身学院)=>非法操作,抛出自定义异常信息。
+     * @param tid 需要申请的教师id
+     * @param newCid 新学院id
+     * @param oldAdminRemark 旧管理员(申请者)备注
+     */
+    @ApiOperation("申请教师换学院")
+    @PostMapping("/applyChangeTeacherCollege/{tid}/{newCid}")
+    public R<?> applyChangeTeacherCollege(@PathVariable Long tid,@PathVariable Long newCid,
+                                          @RequestParam(value = "oldAdminRemark",required = false) String oldAdminRemark) {
+        Teacher findTeacher = myUtil.checkTidExistAndReturnTeacher(tid);//判断tid是否存在
+        myUtil.checkCidExistAndReturnCollege(newCid);//判断cid是否存在
+        //tid是否是当前学院
+        if (!findTeacher.getCid().equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.REQUEST_CHANGE_COLLEGE_ERROR_TID_IS_SELF);
+        }
+        //判断cid是否是当前学院
+        Long oldCid = UserInfoContext.getUser().getCid();
+        if (newCid.equals(oldCid)) {
+            throw new CustomException(CustomExceptionCodeMsg.REQUEST_CHANGE_COLLEGE_ERROR_TID_IS_SELF);
+        }
+        //判断tid是否正在申请换学院
+        Integer unAuditCountByTid = requestCollegeChangeMapper.getUnAuditCountByTid(tid);
+        if (unAuditCountByTid != 0) {
+            throw new CustomException(CustomExceptionCodeMsg.REQUEST_CHANGE_COLLEGE_ERROR_TID_IS_AUDITING);
+        }
+        adminService.applyChangeTeacherCollege(tid, newCid, oldAdminRemark);
+        return R.success("申请成功");
+    }
+
+    /**
+     * 检验auditStatus是否合法,不合法抛出自定义信息
+     * @param pageNum
+     * @param pageSize
+     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
+     * @return
+     */
+    @ApiOperation("查看学院转出的申请")
+    @GetMapping("/getChangeCollegeRequestList")
+    public R<Page<RequestCollegeChangeDto>> getChangeCollegeRequestList(@RequestParam("pageNum") Integer pageNum,
+                                                                        @RequestParam("pageSize") Integer pageSize,
+                                                                        @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+                                                                        @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+        if(auditStatus!=null){
+            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
+        }
+        return R.success(adminService.getChangeCollegeRequestList(pageNum,pageSize, auditStatus,onlyOwn));
+    }
+
+    /** 检验auditStatus是否合法,不合法抛出自定义信息
+     * @param pageNum
+     * @param pageSize
+     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
+     * @param onlyOwn 布尔类型(可选)只看自己的,默认false
+     * @return
+     */
+    @ApiOperation("查看转来学院的申请")
+    @GetMapping("/getChangeCollegeAuditList")
+    public R<Page<RequestCollegeChangeDto>> getChangeCollegeAuditList(@RequestParam("pageNum") Integer pageNum,
+                                                                      @RequestParam("pageSize") Integer pageSize,
+                                                                      @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+                                                                      @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+        if(auditStatus!=null){
+            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
+        }
+        return R.success(adminService.getChangeCollegeAuditList(pageNum,pageSize, auditStatus,onlyOwn));
+    }
+
+    /**
+     * 更改学院成功后教师的oid会自动设为0(officeName是暂无)。自动填充auditTime+auditStatus+newAid+newCid。id不存在/不是当前学院的申请/不是待审核状态=>非法操作,抛出自定义异常信息。
+     * @param id
+     * @param newAdminRemark
+     * @return
+     */
+    @ApiOperation("通过换学院申请")
+    @PutMapping("/passChangeCollege/{id}")
+    public R<?> passChangeCollege(@PathVariable Long id,
+                                  @RequestParam(value = "newAdminRemark",required = false) String newAdminRemark) {
+        RequestCollegeChange requestCollegeChange = requestCollegeChangeMapper.selectById(id);
+        if (requestCollegeChange == null) {
+            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_REQUEST_COLLEGE_CHANGE);
+        }
+        Long newCid = requestCollegeChange.getNewCid();
+        //判断是否是当前学院的申请
+        if (!newCid.equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.NO_POWER_AUDIT);
+        }
+        //判断是否是待审核状态
+        if (requestCollegeChange.getAuditStatus() != 0) {
+            throw new CustomException(CustomExceptionCodeMsg.AUDIT_ERROR_NOT_UNAUDIT);
+        }
+        //通过申请
+        adminService.passChangeCollege(requestCollegeChange, newAdminRemark);
+        return R.success("通过申请成功");
+    }
+
+
+    @ApiOperation("拒绝换学院申请")
+    @PutMapping("/refuseChangeCollege/{id}")
+    public R<?> refuseChangeCollege(@PathVariable Long id,
+                                    @RequestParam(value = "newAdminRemark",required = false) String newAdminRemark) {
+        RequestCollegeChange requestCollegeChange = requestCollegeChangeMapper.selectById(id);
+        if (requestCollegeChange == null) {
+            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_REQUEST_COLLEGE_CHANGE);
+        }
+        Long newCid = requestCollegeChange.getNewCid();
+        //判断是否是当前学院的申请
+        if (!newCid.equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.NO_POWER_AUDIT);
+        }
+        //判断是否是待审核状态
+        if (requestCollegeChange.getAuditStatus() != 0) {
+            throw new CustomException(CustomExceptionCodeMsg.AUDIT_ERROR_NOT_UNAUDIT);
+        }
+        //拒绝申请
+        adminService.refuseChangeCollege(requestCollegeChange, newAdminRemark);
+        return R.success("拒绝申请成功");
+    }
+
+    //如果是oldAid本人并且未审核,则直接删除当前记录,如果是其它则添加删除角色
+    /**
+     * 根据id查找记录,若未审核,只有oldAid申请者可操作,直接执行逻辑删除(删除记录全部人都看不见)。
+     * 若已审核,oldAid/newAid(申请者/审核者)都可操作,但都只是删除自己的记录(删除自己的显示列表)。
+     * 检验 id不存在/没有权限/已删除过 会返回自定义信息
+     * @param id 换学院申请记录id
+     * @return 根据情况返回'删除审核申请成功'/'删除审核记录成功'
+     */
+    @ApiOperation("删除换学院申请记录")
+    @DeleteMapping("/deleteChangeCollege/{id}")
+    public R<?> deleteChangeCollege(@PathVariable Long id) {
+        String data = adminService.deleteChangeCollege(id);
+        return R.success(data);
+    }
+
+
+    //==========================================excel======================================
     /**
      * @param ids       （可选）
      * @param oids      （可选）教研室oids
@@ -171,14 +462,20 @@ public class AdminController {
      * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
      * @throws IOException
      */
+    @LogAnnotation(module = "管理员", operator = "Excel批量导出教师信息")
     @ApiOperation("Excel批量导出教师信息")
     @GetMapping("/export")
-    public R<?> exportExcel(@RequestParam(value = "ids", required = false) List<Long> ids,
+    public void exportExcel(@RequestParam(value = "ids", required = false) List<Long> ids,
                             @RequestParam(value = "oids", required = false) List<Long> oids,
                             @RequestParam(value = "fileName", required = false) String fileName,
                             @RequestParam(value = "fieldList", required = false) List<String> fieldList) throws IOException {
-        ExcelWriter writer = this.getExcelWriterByParams(ids, oids, fileName, fieldList);
-        //设置response并写出xlsx
+        if (StrUtil.isBlank(fileName)) {
+            fileName = defaultExcelName;
+        }
+        List<Teacher> teacherList = this.getTeacherList(ids, oids);
+        // ===ExcelWriter:excel写入器===
+        ExcelWriter writer = teacherService.getMyExcelWriter(teacherList, fileName, fieldList);
+        //在浏览器下载：设置response并写出xlsx
         fileName = URLEncoder.encode(fileName, "UTF-8");
         response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
         response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
@@ -187,83 +484,74 @@ public class AdminController {
         writer.close();
         outputStream.flush();
         outputStream.close();
-        log.info("导出成功");
-        return R.success("导出成功");
+    }
+
+    //==========================================word======================================
+    @ApiOperation("导出Word")
+    @GetMapping("/exportWord/{tid}")
+    public void exportWord(@PathVariable Long tid) throws IOException {
+        //判断权限
+        Teacher findTeacher = teacherService.getById(tid);
+        if (findTeacher == null) {
+            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
+        }
+        if (!findTeacher.getCid().equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+        //获取XWPFTemplate word写入器 渲染好数据的word
+        XWPFTemplate render = teacherService.getWordRender(findTeacher);
+        //在浏览器下载：设置response并写出docx
+        String fileName = URLEncoder.encode(findTeacher.getTeacherName() + "教师信息表", "UTF-8");
+        response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document;charset=utf-8");
+        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".docx");
+        ServletOutputStream outputStream = response.getOutputStream();
+        render.writeAndClose(outputStream);
+        render.close();//双重保障
+        outputStream.flush();
+        outputStream.close();
     }
 
 
-    @Value("${ip:localhost}")
-    String ip;
-    @Value("${server.port}")
-    String port;
-    @Value("${file.root-path}")
-    String rootPath;
-    private final String sep = File.separator;
-
-    String temporaryPath;
-    @PostConstruct
-    public void init() {
-        temporaryPath = rootPath + sep + "temporary";
-    }
-    //利用hutool导出压缩包
+    //============================================压缩包================================================
 
     @ApiOperation("导出压缩包")
     @GetMapping("/exportZip/")
+    @LogAnnotation(module="管理员",operator="导出压缩包")
     public void exportZip(@RequestParam(value = "ids", required = false) List<Long> ids,
                           @RequestParam(value = "oids", required = false) List<Long> oids,
                           @RequestParam(value = "fieldList", required = false) List<String> fieldList,
                           @RequestParam(value = "attachmentList", required = false) List<String> attachmentList) throws IOException {
-        String sep = File.separator;
-        //创建临时zip包
+        //创建一个新的临时文件路径！！！
+        if (FileUtil.exist(temporaryPath)) {
+            FileUtil.del(temporaryPath);
+        }//创建临时zip包
         File tempZipFile = new File(temporaryPath + sep + "test压缩.zip");
         //需要压缩的文件列表
         List<File> fileList = CollUtil.newArrayList();
         //调用封装函数获取教师列表
-        List<Teacher> teacherList = this.getTeacherListByParams(UserInfoContext.getUser().getCid(), ids, oids);
-        //教师附件文件夹
-        File tempTeacherListFile = new File(temporaryPath + sep + "教师附件");
-        FileUtil.mkdir(tempTeacherListFile);
-        for (Teacher teacher : teacherList) {
-            Long tid = teacher.getId();
-            Teacher findTeacher = teacherService.getById(tid);
-            //教师附件文件夹下新建以xx教师姓名命名的目录
-            String tempTeacherPath = tempTeacherListFile + sep + findTeacher.getTeacherName();
-            FileUtil.mkdir(tempTeacherPath);
-
-            //从云端找到该教师对应的文件
-            File findAcademicPaperFile = new File(rootPath + sep + "academicPaper" + sep + tid);
-            FileUtil.mkdir(findAcademicPaperFile);//防止不存在报错
-            //创建对应文件夹
-            String tempAcademicPaperPath = tempTeacherPath + sep + "论文材料";//
-            FileUtil.mkdir(tempAcademicPaperPath);
-            //copyContent(A,B) 复制A目录下的文件 到 B目录下,true表示覆盖
-            FileUtil.copyContent(findAcademicPaperFile, new File(tempAcademicPaperPath), true);
-
-            /*  test 测试第二类信息附件*/
-            File findTestFile = new File(rootPath + sep + "test" + sep + tid);
-            FileUtil.mkdir(findTestFile);//防止不存在报错
-            String tempTestPath = tempTeacherPath + sep + "测试目录2";
-            FileUtil.mkdir(tempTestPath);
-            FileUtil.copyContent(findTestFile, new File(tempTestPath), true);
-        }
-
-
-        fileList.add(tempTeacherListFile);
-        fileList.add(this.getTeachersExcelFileByParams(ids, oids, fieldList));
-        fileList.add(new File("D:" + sep + "qwq.jpg"));
-        //压缩多个文件
+        List<Teacher> teacherList = this.getTeacherList(ids, oids);
+        //添加需要压缩的文件
+        fileList.add(teacherService.getTeacherAttachmentFolder(teacherList,attachmentList));//教师附件文件夹
+        fileList.add(teacherService.getMyExcelFile(teacherList, fieldList)); //excel
+        fileList.add(teacherService.getMyWordFolder(teacherList));           //word
+        fileList.add(new File(rootPath + sep + "qwq.jpg"));
+        //开始压缩
         ZipUtil.zip(tempZipFile, true, fileList.toArray(new File[fileList.size()]));
         //下载zip到浏览器！！！
         MyUtil.downloadZip(tempZipFile, response);
-        //删除临时路径 包括所有临时文件夹及文件
-        FileUtil.del(temporaryPath);//删除临时zip包
+        //统一删除所有临时文件！！！！！！
+        FileUtil.del(temporaryPath);
     }
 
 
-    private List<Teacher> getTeacherListByParams(Long u_cid, List<Long> ids, List<Long> oids) {
+
+    //==========================================封装方法=============================================
+    //获取需要的teacherList
+    private List<Teacher> getTeacherList(List<Long> ids, List<Long> oids) {
+        Long u_cid = UserInfoContext.getUser().getCid();
         LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
         /*权限只有自己管理学院*/
-        queryWrapper.eq(Teacher::getCid, UserInfoContext.getUser().getCid());
+        queryWrapper.eq(Teacher::getCid, u_cid);
         //根据传参判断选择的教师
         if (oids != null && !oids.isEmpty()) {//优先看oids
             for (Long oid : oids) {
@@ -287,135 +575,33 @@ public class AdminController {
                 }
             }//没有非法id就根据ids选
             queryWrapper.in(Teacher::getId, ids);
-        } else log.info("没有选择需要打印的教师,准备导出管理学院下所有教师信息");
+        } else log.info("没有选择指定教师,默认选择管理学院下所有教师");
         return teacherService.list(queryWrapper);
     }
 
-
-    private ExcelWriter getExcelWriterByParams(List<Long> ids, List<Long> oids, String fileName, List<String> fieldList) {
-        if (StrUtil.isBlank(fileName)) {
-            fileName = "教师信息表";
+    private void checkTeacherIds(List<Long> ids) {
+        //判断ids是否全部都存在
+        LambdaQueryWrapper<Teacher> queryWrapper_1 = new LambdaQueryWrapper<>();
+        queryWrapper_1.in(Teacher::getId, ids);
+        long count = teacherService.count(queryWrapper_1);
+        if (count != ids.size()) {
+            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
         }
-        Long u_cid = UserInfoContext.getUser().getCid();
-        // 创建无敌ExcelWriter writer
-        ExcelWriter writer = ExcelUtil.getWriter(true);
-        //获取数据
-        List<Teacher> teacherList = this.getTeacherListByParams(u_cid, ids, oids);
-        List<TeacherExcelModel> teacherExcelModelList = teacherList.stream().map((teacher -> {
-            Long tid = teacher.getId();
-            Long cid = teacher.getCid();
-            Long oid = teacher.getOid();
-            TeacherExcelModel teacherExcelModel = new TeacherExcelModel(teacher);
-            teacherExcelModel.setRoleList(teacherService.getRoleListByTid(tid).toString().replaceAll("^\\[|\\]$", ""));
-            log.info(teacherExcelModel.getRoleList());
-            teacherExcelModel.setCollegeName(collegeMapper.getCollegeNameByCid(cid));
-            teacherExcelModel.setOfficeName(officeMapper.getOfficeNameByOid(oid));
-            IdentityCardAudit identityCardAudit = teacherService.queryIdentityCardShowByTid(tid);
-            if (identityCardAudit != null) {
-                teacherExcelModel.setIdentityCard(identityCardAudit.getIdNumber());
+        //判断ids是否都是当下学院的(权限
+        Long cid = UserInfoContext.getUser().getCid();
+        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Teacher::getId, ids);
+        List<Teacher> teachers = teacherService.list(queryWrapper);
+        for (Teacher teacher : teachers) {
+            if (!teacher.getCid().equals(cid)) {
+                throw new CustomException(CustomExceptionCodeMsg.UPDATE_AUDIT_POWER_ERROR);
             }
-            return teacherExcelModel;//返回的是TeacherExcelModel的集合
-        })).collect(Collectors.toList());
-
-        //自定义标题别名
-        log.error(fieldList.toString());
-        //ArrayUtil.isNotEmpty(fieldList)
-        if (!fieldList.isEmpty()) {
-            int count = 0;
-            if (fieldList.contains("id")) {
-                writer.addHeaderAlias("id", "教师id");
-                count += 1;
-            }
-            if (fieldList.contains("teacherName")) {
-                writer.addHeaderAlias("teacherName", "教师姓名");
-                count += 1;
-            }
-            if (fieldList.contains("username")) {
-                writer.addHeaderAlias("username", "登录账号");
-                count += 1;
-            }
-            if (fieldList.contains("gender")) {
-                writer.addHeaderAlias("gender", "性别");
-                count += 1;
-            }
-            if (fieldList.contains("identityCard")) {
-                writer.addHeaderAlias("identityCard", "身份证号");
-                count += 1;
-            }
-            if (fieldList.contains("roleList")) {
-                writer.addHeaderAlias("roleList", "职务");
-                count += 1;
-            }
-            if (fieldList.contains("ethnic")) {
-                writer.addHeaderAlias("ethnic", "民族");
-                count += 1;
-            }
-            if (fieldList.contains("birthplace")) {
-                writer.addHeaderAlias("birthplace", "籍贯");
-                count += 1;
-            }
-            if (fieldList.contains("address")) {
-                writer.addHeaderAlias("address", "住址");
-                count += 1;
-            }
-            if (fieldList.contains("phone")) {
-                writer.addHeaderAlias("phone", "电话号码");
-                count += 1;
-            }
-
-            if (fieldList.contains("collegeName")) {
-                writer.addHeaderAlias("collegeName", "学院");
-                count += 1;
-            }
-            if (fieldList.contains("officeName")) {
-                writer.addHeaderAlias("officeName", "教研室");
-                count += 1;
-            }
-            if (fieldList.contains("isAuditor")) {
-                writer.addHeaderAlias("isAuditor", "审核员");
-                count += 1;
-            }
-            if (fieldList.contains("createDate")) {
-                writer.addHeaderAlias("createDate", "注册日期");
-                count += 1;
-            }
-            log.error("count={}", count);
-            log.error(fileName);
-            writer.merge(count - 1, fileName);//合并标题
-        } else {
-            writer.addHeaderAlias("id", "教师id");
-            writer.addHeaderAlias("teacherName", "教师姓名");
-            writer.addHeaderAlias("username", "登录账号");
-            writer.addHeaderAlias("gender", "性别");
-            writer.addHeaderAlias("identityCard", "身份证号");
-            writer.addHeaderAlias("roleList", "职务");
-            writer.addHeaderAlias("ethnic", "民族");
-            writer.addHeaderAlias("birthplace", "籍贯");
-            writer.addHeaderAlias("address", "住址");
-            writer.addHeaderAlias("phone", "电话号码");
-            writer.addHeaderAlias("collegeName", "学院");
-            writer.addHeaderAlias("officeName", "教研室");
-            writer.addHeaderAlias("isAuditor", "审核员");
-            writer.addHeaderAlias("createDate", "注册日期");
-            writer.merge(13, fileName);
         }
-        log.info("teacherExcelList={}", teacherExcelModelList);
-        //只写出加了别名的字段
-        writer.setOnlyAlias(true);
-        writer.write(teacherExcelModelList, true);//标题行true
-        return writer;
     }
 
-    @Value("${excel.file-name}")
-    String excelFileName;
-    private File getTeachersExcelFileByParams(List<Long> ids, List<Long> oids, List<String> fieldList) {
-        ExcelWriter writer = this.getExcelWriterByParams(ids, oids, excelFileName, fieldList);
-        File excelFile = new File(temporaryPath + sep + excelFileName + ".xlsx");
-        writer.flush(excelFile);//直接将数据写入到文件中,并关闭ExcelWriter对象
-      /*writer.flush(FileUtil.getOutputStream(excelFile), true);//true 关闭输出流*/
-        writer.close();//双重保险
-        return excelFile;
-    }
+
+
+
 
 
 }

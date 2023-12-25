@@ -1,7 +1,10 @@
 package com.aih.service;
 
 import com.aih.entity.Admin;
-import com.aih.entity.Teacher;
+import com.aih.entity.RequestCollegeChange;
+import com.aih.entity.vo.AuditInfoDto;
+import com.aih.entity.vo.RequestCollegeChangeDto;
+import com.aih.entity.vo.TeacherDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -26,6 +29,23 @@ public interface IAdminService extends IService<Admin> {
 
     void logout();
 
-    Page<Teacher> getTeacherList(Page<Teacher> pageInfo, String keyword, Integer isAuditor, Integer gender, String ethnic, String birthplace, String address);
+    Page<TeacherDto> getTeacherList(Integer pageNum, Integer pageSize, String keyword, Long oid, String officeName, String teacherName, Integer isAuditor, Integer gender, String ethnic, String birthplace, String address);
 
+    void resetPassword(List<Long> ids, String password);
+
+    Page<AuditInfoDto> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn);
+
+    Page<RequestCollegeChangeDto> getChangeCollegeRequestList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn);
+
+    Page<RequestCollegeChangeDto> getChangeCollegeAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn);
+
+    void applyChangeTeacherCollege(Long tid, Long newCid, String oldAdminRemark);
+
+    void passChangeCollege(RequestCollegeChange id, String newAdminRemark);
+
+    void refuseChangeCollege(RequestCollegeChange requestCollegeChange, String newAdminRemark);
+
+    String deleteChangeCollege(Long id);
+
+    void deleteTeacher(List<Long> ids);
 }

@@ -1,4 +1,4 @@
-package com.aih.custom.annotation;
+package com.aih.common.interceptor;
 
 import java.lang.annotation.*;
 

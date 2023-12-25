@@ -1,11 +1,9 @@
 package com.aih.service;
 
-import com.aih.entity.College;
 import com.aih.entity.Office;
+import com.aih.entity.vo.OfficeDto;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-import org.apache.ibatis.annotations.Mapper;
-
-import java.util.List;
 
 /**
  * <p>
@@ -17,4 +15,5 @@ import java.util.List;
  */
 
 public interface IOfficeService extends IService<Office> {
+    Page<OfficeDto> getAllOffice(Integer pageNum, Integer pageSize, String officeName);
 }

@@ -5,8 +5,8 @@ import com.aih.entity.SuperAdmin;
 import com.aih.mapper.AdminMapper;
 import com.aih.mapper.SuperAdminMapper;
 import com.aih.service.ISuperAdminService;
-import com.aih.custom.exception.CustomException;
-import com.aih.custom.exception.CustomExceptionCodeMsg;
+import com.aih.common.exception.CustomException;
+import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -17,9 +17,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -79,7 +81,35 @@ public class SuperAdminServiceImpl extends ServiceImpl<SuperAdminMapper, SuperAd
     }
 
     @Override
-    public void updateAdminStatus(Integer status, List<Long> ids) {
+    public void updateAdminsCid(Long cid, List<Long> ids) {
+        log.info("cid:{},ids:{}",cid,ids);
+        //获取 cid变了的 new_ids, 只修改变动的,因为会修改 权限生效时间createDate
+        List<Long> new_ids = ids.stream().filter(id -> {
+            Admin admin = adminMapper.selectById(id);
+            return !admin.getCid().equals(cid); // 返回不相等的
+        }).collect(Collectors.toList());
+        if (new_ids.isEmpty()){
+            return;
+        }
+        //开始操作
+        LambdaUpdateWrapper<Admin> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.in(true,Admin::getId,new_ids)
+                .set(Admin::getCid, cid)
+                .set(Admin::getCreateDate, LocalDateTime.now()); //修改角色权限之后新的创建时间
+        adminMapper.update(null,updateWrapper);//null表示不修改其他字段
+    }
+
+    @Override
+    public void resetPassword(List<Long> ids, String password) {
+        log.info("重置密码的ids:{}",ids);
+        LambdaUpdateWrapper<Admin> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.in(true,Admin::getId,ids)
+                .set(Admin::getPassword, passwordEncoder.encode(password));
+        adminMapper.update(null,updateWrapper);
+    }
+
+    @Override
+    public void updateAdminsStatus(Integer status, List<Long> ids) {
         //开始操作
         log.info("AdminStatus:{},ids:{}",status,ids);
         LambdaUpdateWrapper<Admin> updateWrapper = new LambdaUpdateWrapper<>();
@@ -87,6 +117,8 @@ public class SuperAdminServiceImpl extends ServiceImpl<SuperAdminMapper, SuperAd
                 .set(Admin::getStatus, status);
         adminMapper.update(null,updateWrapper);
     }
+
+
 
 
 }

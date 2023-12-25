@@ -1,7 +1,6 @@
 package com.aih.common.exception;
 
-import com.aih.custom.exception.CustomException;
-import com.aih.custom.exception.CustomExceptionCodeMsg;
+import cn.hutool.core.exceptions.UtilException;
 import com.aih.utils.vo.R;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.converter.HttpMessageNotReadableException;
@@ -15,6 +14,11 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.UnknownHostException;
+import java.sql.SQLNonTransientConnectionException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @ControllerAdvice(annotations = {RestController.class, Controller.class})   //这个注解表示这个类是全局异常处理类
 @ResponseBody
@@ -73,6 +77,36 @@ public class GlobalExceptionHandler {
     public <T> R<T> handleHttpMediaTypeNotSupportedException(HttpMediaTypeNotSupportedException ex) {
         log.error("请求方式与Content-Type不匹配",ex);
         return R.error(CustomExceptionCodeMsg.REQUEST_METHOD_NOT_MATCH.getCode(),CustomExceptionCodeMsg.REQUEST_METHOD_NOT_MATCH.getMsg());
+    }
+
+    @ExceptionHandler(UnknownHostException.class)
+    public <T> R<T> handleUnknownHostException(UnknownHostException e) {
+        log.error("【未知主机异常】↓↓↓",e);
+        return R.error(CustomExceptionCodeMsg.UNKNOWN_HOST.getCode(), CustomExceptionCodeMsg.UNKNOWN_HOST.getMsg());
+    }
+
+    @ExceptionHandler(UtilException.class)
+    public <T> R<T> handleUtilException(UtilException e) {
+        log.error("【工具类异常】↓↓↓",e);
+        String errorMessage = e.getMessage();
+        Pattern compile = Pattern.compile("File \\[.*\\] not exist");
+        Matcher matcher = compile.matcher(errorMessage);
+        if (matcher.find()) {
+            return R.error(CustomExceptionCodeMsg.FILE_NOT_EXIST.getCode(), CustomExceptionCodeMsg.FILE_NOT_EXIST.getMsg());
+        }
+        return R.error(CustomExceptionCodeMsg.UTIL_EXCEPTION.getCode(), CustomExceptionCodeMsg.UTIL_EXCEPTION.getMsg());
+    }
+
+    @ExceptionHandler(IOException.class)
+    public <T> R<T> handleIOException(IOException e) {
+        log.error("【IO异常】↓↓↓",e);
+        return R.error(CustomExceptionCodeMsg.IO_EXCEPTION.getCode(), CustomExceptionCodeMsg.IO_EXCEPTION.getMsg());
+    }
+
+    @ExceptionHandler(SQLNonTransientConnectionException.class)
+    public <T> R<T> handleSQLNonTransientConnectionException(SQLNonTransientConnectionException e) {
+        log.error("【数据库连接异常】↓↓↓",e);
+        return R.error(CustomExceptionCodeMsg.SQL_NON_TRANSIENT_CONNECTION_EXCEPTION.getCode(), CustomExceptionCodeMsg.SQL_NON_TRANSIENT_CONNECTION_EXCEPTION.getMsg());
     }
     /*@ExceptionHandler(value = {CustomException.class})
     public <T> R<T> handleCustomException(CustomException e) {

@@ -1,6 +1,5 @@
 package com.aih.service;
 
-import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -25,5 +24,9 @@ public interface ISuperAdminService extends IService<SuperAdmin> {
 
     void logout();
 
-    void updateAdminStatus(Integer status, List<Long> ids);
+    void updateAdminsStatus(Integer status, List<Long> ids);
+
+    void updateAdminsCid(Long cid, List<Long> ids);
+
+    void resetPassword(List<Long> ids, String password);
 }
