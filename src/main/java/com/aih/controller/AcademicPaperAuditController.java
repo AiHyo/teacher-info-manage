@@ -1,6 +1,8 @@
 package com.aih.controller;
 
+import cn.hutool.core.collection.CollUtil;
 import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.ZipUtil;
 import com.aih.common.interceptor.AuthAccess;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
@@ -29,6 +31,7 @@ import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 论文审核 Controller
@@ -48,6 +51,7 @@ public class AcademicPaperAuditController {
     private IAcademicPaperAuditService academicPaperService;
     @Resource
     private TeacherMapper teacherMapper;
+
 
     /**
      * tid、createTime、auditStatus、isShow、deleteRoles等无需填写,会自动填充
@@ -98,6 +102,7 @@ public class AcademicPaperAuditController {
             findRecord.setAuditorRemark(auditorRemark);
         }
         academicPaperService.passAcademicPaperAudit(findRecord);
+//        this.makeFilesUsefulByID(id);
         return R.success("审核通过");
     }
 
@@ -240,50 +245,147 @@ public class AcademicPaperAuditController {
     String port;
     @Value("${file.root-path}")
     String rootPath;
+    @Value("${file.temporary-path}")
+    String temporaryPath;
     String basePath;
+    private final String sep = File.separator;
     @PostConstruct
     public void init() {
-        basePath = rootPath + File.separator + "academicPaper";
+        basePath = rootPath + sep + "academicPaper"; // files->academicPaper
     }
 
 
+    //根据id上传附件,只有tid申请者可操作,直接执行上传附件
+
+    /**
+     * 根据id上传附件。id不存在/不是自己。会抛出自定义异常信息
+     * @param id  关联的记录id
+     * @param fileList 附件
+     * @return
+     * @throws IOException
+     */
     @ApiOperation("[教师用户]上传附件")
-    @PostMapping("/file/upload")
-    public R<?> upload(@RequestParam("file") MultipartFile file) throws IOException {
-//        basePath.replace("\\","/");
-        MyUtil.checkIsTeacher();//判断是否是教师
-        Long tid = UserInfoContext.getUser().getId();
-        String parentPath =  basePath + File.separator + tid;
-        String fileName = file.getOriginalFilename(); // 文件全名
-        //abc.png
-        String mainName = FileUtil.mainName(fileName); // abc 文件名
-        String extName = FileUtil.extName(fileName);   // png 文件后缀
+    @PostMapping("/file/upload/{id}")
+    public R<ArrayList<String>> upload(@PathVariable("id") Long id,@RequestParam("fileList") MultipartFile[] fileList) throws IOException {
+        //判断id是否存在
+        AcademicPaperAudit findRecord = this.checkIdExistAndReturn(id);
+        Long tid = findRecord.getTid();
+        if (!Objects.equals(tid, UserInfoContext.getUser().getId())){
+            throw new CustomException(CustomExceptionCodeMsg.NO_POWER_UPLOAD);
+        }
+        // === 开始 ===
+        String parentPath =  basePath + sep + tid + sep + id; // files->academicPaper->tid->id
         if (!FileUtil.exist(parentPath)) {
             FileUtil.mkdir(parentPath); // 创建文件根目录
         }
-        // 如果当前上传的文件已经存在了，那么这个时候我就要重名一个文件名称
-        if (FileUtil.exist(parentPath + File.separator + fileName)) {
-            fileName = System.currentTimeMillis() + "_" + mainName + "." + extName;
-          //fileName = System.currentTimeMillis() + "_" + fileName;
+        ArrayList<String> urls = new ArrayList<>();
+        for (MultipartFile file : fileList) {
+            String fileName = file.getOriginalFilename(); // abc.png 文件全名
+            /*  String mainName = FileUtil.mainName(fileName); // abc 文件名
+            String extName = FileUtil.extName(fileName);   // png 文件后缀*/
+            // 如果当前上传的文件已经存在了，那么这个时候我就要重名一个文件名称
+            int i = 1; // 采用windows文件重命名方法
+            while (FileUtil.exist(parentPath + sep + fileName)) {
+                fileName = fileName + "(" + i + ")";
+                i++;
+            }
+            File saveFile = new File(parentPath + sep + fileName);
+            file.transferTo(saveFile); //将文件上传至对应磁盘位置
+            String url = "http://" + ip + ":" + port + "/academicPaperAudit/file/download/"  + id + "/" + fileName;
+            urls.add(url);
         }
-        File saveFile = new File(parentPath + File.separator + fileName);
-        file.transferTo(saveFile); //将文件上传至对应磁盘位置
-        String url = "http://" + ip + ":" + port + "/academicPaperAudit/file/download/" + tid + "/" + fileName;
-        return R.success(url);
+        return R.success(urls);
     }
 
     /**
-     * 下载附件 无拦截
-     * @param tid 教师id
+     * 根据记录id,返回对应的附件列表,tid若不是教师用户/用户若没有对该uid的审核权限,抛出自定义异常
+     * @param id 记录id
+     */
+    @ApiOperation("根据tid查询附件列表")
+    @GetMapping("/file/list/{id}") //附件不会很多,暂不分页
+    public R<List<FileInfo>> list(@PathVariable("id") Long id) {
+        AcademicPaperAudit findRecord = this.checkIdExistAndReturn(id);
+        Long tid = findRecord.getTid();
+        //①tid合法:判断tid是否教师用户
+        if (tid.toString().charAt(0) != '1') {
+            throw new CustomException(CustomExceptionCodeMsg.PATH_PARAM_ILLEGAL);
+        }
+        //②tid合法:判断uid是否有权限
+        Long uid = UserInfoContext.getUser().getId();
+        List<Long> powerIds = myUtil.getPowerIdsByTid(tid);
+        if (!powerIds.contains(uid)) {
+            throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
+        }
+        String parentPath = basePath + sep + tid + sep + id; // files->academicPaper->tid->id
+        if (!FileUtil.exist(parentPath)) {//如果不存在
+            throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
+        }
+        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        List<File> files = FileUtil.loopFiles(parentPath);//获取文件夹下的所有文件
+        List<FileInfo> fileList = new ArrayList<>();
+        for (File file : files) {
+            String fileName = file.getName();
+            long fileLength = file.length();
+            String fileSize = FileUtil.readableFileSize(fileLength);//文件大小转换成对应的单位
+            String lastModifiedTime  = format.format(file.lastModified());//时间戳转换成对应格式的时间
+            FileInfo fileInfo = new FileInfo(fileName, fileLength, fileSize, lastModifiedTime);
+            fileList.add(fileInfo);
+        }
+        return R.success(fileList);
+    }
+
+    //根据id导出对应的文件夹
+    /**
+     * 根据记录id导出对应的文件夹,只有tid申请者可操作,直接执行导出
+     * @param id 记录id
+     * @throws IOException
+     */
+    @ApiOperation("根据记录id导出附件文件夹压缩包")
+    @GetMapping("/file/export/{id}")
+    public void export(@PathVariable("id") Long id, HttpServletResponse response) throws IOException {
+        //判断id是否存在
+        AcademicPaperAudit findRecord = this.checkIdExistAndReturn(id);
+        Long tid = findRecord.getTid();
+        //判断权限
+        List<Long> powerIds = myUtil.getPowerIdsByTid(tid);
+        if (!powerIds.contains(UserInfoContext.getUser().getId())){
+            throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
+        }
+        // === 开始 ===
+        //创建一个新的临时文件路径！！！
+        if (FileUtil.exist(temporaryPath)) {
+            FileUtil.del(temporaryPath);
+        }
+        //需要压缩的文件列表 fileList
+        List<File> fileList = CollUtil.newArrayList();
+        String parentPath =  basePath + sep + tid + sep + id; // files->academicPaper->tid->id
+        if (!FileUtil.exist(parentPath)) {
+            throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
+        }
+        fileList.add(new File(parentPath));
+        //构造临时压缩文件 tempZipFile
+        String teacherName = teacherMapper.getTeacherNameByTid(tid);
+        String fileName = teacherName + "-论文附件.zip";
+        File tempZipFile = new File(temporaryPath + sep + fileName);
+        ZipUtil.zip(tempZipFile, true, fileList.toArray(new File[fileList.size()]));
+        MyUtil.downloadZip(tempZipFile, response);
+    }
+
+    /**
+     * 下载附件 无拦截。 id/文件不存在,则返回对应信息
+     * @param id  记录id.
      * @param fileName 论文附件文件名,全称(带后缀)
      * @param response
      * @throws IOException
      */
     @AuthAccess
     @ApiOperation("下载论文附件")
-    @GetMapping("/file/download/{tid}/{fileName}")
-    public void download(@PathVariable("tid")Long tid, @PathVariable("fileName") String fileName, HttpServletResponse response) throws IOException {
-        String parentPath =  basePath + File.separator + tid;
+    @GetMapping("/file/download/{id}/{fileName}")
+    public void download(@PathVariable("id")Long id,
+                         @PathVariable("fileName") String fileName, HttpServletResponse response) throws IOException {
+        AcademicPaperAudit findRecord = this.checkIdExistAndReturn(id);
+        Long tid = findRecord.getTid();
+        String parentPath =  basePath + sep + tid + sep + id; // files->academicPaper->tid->id
         /*
             response.setContentType("application/octet-stream");
             response.setHeader("Content-Disposition", "attachment; filename=" + fileName);
@@ -298,12 +400,12 @@ public class AcademicPaperAuditController {
                     bos.write(buffer, 0, len);
                 }
         }*/
-        String filePath = parentPath + File.separator + fileName;
+        String filePath = parentPath + sep + fileName; // files->academicPaper->tid->id->fileName
         if (!FileUtil.exist(filePath)) {
             log.error("文件不存在：{}", filePath);
             throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
         }
-        //对文件名编码是解决中文文件名乱码问题
+        //对文件名编码,解决中文文件名乱码问题
         response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 下载
         //response.addHeader("Content-Disposition", "inline;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 预览
         byte[] bytes = FileUtil.readBytes(filePath);
@@ -314,15 +416,18 @@ public class AcademicPaperAuditController {
     }
 
     /**
-     * 返回true/false,检查文件名是否存在,用户重命名的时候,如果重名继续会覆盖原文件
+     * 是否有该文件存在,有则说明已有附件。用于检查文件名是否存在。(用户重命名的时候,如果重名继续会覆盖原文件)
+     * @param id 记录id
+     * @param fileName 文件名,全称(带后缀)
+     * @return 返回true/false
      */
-    @ApiOperation("[教师用户]自己是否有该文件存在")
-    @GetMapping("/file/isExist/{fileName}")
-    public R<?> isExist(@PathVariable("fileName") String fileName) {
+    @ApiOperation("[教师用户]检查自己的该文件是否存在")
+    @GetMapping("/file/isExist/{id}/{fileName}")
+    public R<?> isExist(@PathVariable("id") Long id, @PathVariable("fileName") String fileName) {
         MyUtil.checkIsTeacher();//判断是否是教师
         Long uid = UserInfoContext.getUser().getId();
-        String parentPath =  basePath + File.separator + uid;
-        String filePath = parentPath + File.separator + fileName;
+        String parentPath =  basePath + sep + uid + sep + id; // files->academicPaper->uid->id
+        String filePath = parentPath + sep + fileName;
         if (!FileUtil.exist(filePath)) {//如果不存在
             return R.success(false);
         }
@@ -330,18 +435,18 @@ public class AcademicPaperAuditController {
     }
 
     /**
-     * 重命名文件,如果重名执行覆盖,请先调用判断。检验oldFileName,文件不存在,抛出自定义异常信息。
-     * @param oldFileName 原文件名,
-     * @param newMainName 新名称 ：不带后缀
+     * 重命名文件,如果重名执行覆盖,请先调用检查。检验oldFileName,文件不存在,抛出自定义异常信息。
+     * @param oldFileName 原文件名,全称(带后缀)
+     * @param newMainName 新名称: !!!不带后缀!!!
      */
     @ApiOperation("[教师用户]重命名文件")
-    @PutMapping("/file/rename")
-    public R<?> rename(@RequestParam String oldFileName,@RequestParam String newMainName)
+    @PutMapping("/file/rename/{id}")
+    public R<?> rename(@PathVariable("id") Long id, @RequestParam String oldFileName,@RequestParam String newMainName)
     {
         MyUtil.checkIsTeacher();//判断是否是教师
         Long uid = UserInfoContext.getUser().getId();
-        String parentPath =  basePath + File.separator + uid; //
-        String filePath = parentPath + File.separator + oldFileName;
+        String parentPath =  basePath + sep + uid + sep + id; // files->academicPaper->uid->id
+        String filePath = parentPath + sep + oldFileName;
         if (!FileUtil.exist(filePath)) {//如果不存在
             throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
         }
@@ -352,12 +457,12 @@ public class AcademicPaperAuditController {
     /**
      * 删除的论文文件夹(包含里面所有论文文件)。且自己才能删除自己的附件。若不存在则返回文件夹不存在
      */
-    @ApiOperation("[教师用户]删除自己原论文文件夹")
+    @ApiOperation("[教师用户]删除自己的所有论文文件夹")
     @DeleteMapping("/file/deleteAll")
     public R<?> delete(){
         MyUtil.checkIsTeacher();//判断是否是教师
         Long tid = UserInfoContext.getUser().getId();
-        String parentPath =  basePath + File.separator + tid;
+        String parentPath =  basePath + sep + tid;
         if (!FileUtil.exist(parentPath)) {//如果不存在
             throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
         }
@@ -366,16 +471,33 @@ public class AcademicPaperAuditController {
     }
 
     /**
-     * 根据文件名删除自己的论文附件。如果是最后一个文件,则删除父级文件夹。检验fileName抛出自定义异常。
-     * @param fileName
+     * 根据记录id删除自己的附件文件夹。且自己才能删除自己的附件。若不存在则返回文件夹不存在
+     */
+    @ApiOperation("[教师用户]根据记录id删除自己的对应文件夹")
+    @DeleteMapping("/file/deleteAll/{id}")
+    public R<?> delete(@PathVariable("id") Long id){
+        MyUtil.checkIsTeacher();//判断是否是教师
+        Long tid = UserInfoContext.getUser().getId();
+        String parentPath =  basePath + sep + tid + sep + id; // files->academicPaper->tid->id
+        if (!FileUtil.exist(parentPath)) {//如果不存在
+            throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
+        }
+        FileUtil.del(parentPath);//删除文件夹以及文件夹下的文件
+        return R.success("删除原附件成功");
+    }
+
+    /**
+     * 根据id和具体文件名删除自己的论文附件。如果是最后一个文件,则删除父级文件夹。检验fileName抛出自定义异常。
+     * @param id 记录id
+     * @param fileName 文件名,全称(带后缀)
      */
     @ApiOperation("[教师用户]删除自己的论文附件")
-    @DeleteMapping("/file/delete/{fileName}")
-    public R<?> delete(@PathVariable("fileName") String fileName){
+    @DeleteMapping("/file/delete/{id}/{fileName}")
+    public R<?> delete(@PathVariable("id") Long id,@PathVariable("fileName") String fileName){
         MyUtil.checkIsTeacher();//判断是否是教师
         Long uid = UserInfoContext.getUser().getId();
-        String parentPath =  basePath + File.separator + uid;     //files->academicPaper->uid
-        String filePath = parentPath + File.separator + fileName; // files->academicPaper->uid->fileName
+        String parentPath =  basePath + sep + uid + sep + id; // files->academicPaper->uid->id
+        String filePath = parentPath + sep + fileName; // files->academicPaper->uid->id->fileName
         if (!FileUtil.exist(filePath)) {//如果不存在
             throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
         }
@@ -396,45 +518,19 @@ public class AcademicPaperAuditController {
     public R<?> isExist() {
         MyUtil.checkIsTeacher();//判断是否是教师
         Long uid = UserInfoContext.getUser().getId();
-        String parentPath =  basePath + File.separator + uid; // files->academicPaper->uid
+        String parentPath =  basePath + sep + uid; // files->academicPaper->uid
         if (!FileUtil.exist(parentPath)) {//如果不存在
             return R.success(false);
         }
         return R.success(true);
     }
 
-    /**
-     * 返回附件列表,tid若不是教师用户/用户若没有对该uid的审核权限,抛出自定义异常
-     */
-    @ApiOperation("根据tid查询附件列表")
-    @GetMapping("/file/list/{tid}") //附件不会很多,暂不分页
-    public R<List<FileInfo>> list(@PathVariable("tid") Long tid) {
-        //①tid合法:判断tid是否教师用户
-        if (tid.toString().charAt(0) != '1') {
-            throw new CustomException(CustomExceptionCodeMsg.PATH_PARAM_ILLEGAL);
+    private AcademicPaperAudit checkIdExistAndReturn(Long id) {
+        AcademicPaperAudit findRecord = academicPaperService.getById(id);
+        if (findRecord == null) {
+            throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
         }
-        //②tid合法:判断uid是否有权限
-        Long uid = UserInfoContext.getUser().getId();
-        List<Long> powerIds = myUtil.getPowerIdsByTid(tid);
-        if (!powerIds.contains(uid)) {
-            throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
-        }
-        String parentPath = basePath + File.separator + tid;
-        if (!FileUtil.exist(parentPath)) {//如果不存在
-            throw new CustomException(CustomExceptionCodeMsg.FILE_NOT_EXIST);
-        }
-        SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
-        List<File> files = FileUtil.loopFiles(parentPath);//获取文件夹下的所有文件
-        List<FileInfo> fileList = new ArrayList<>();
-        for (File file : files) {
-            String fileName = file.getName();
-            long fileLength = file.length();
-            String fileSize = FileUtil.readableFileSize(fileLength);//文件大小转换成对应的单位
-            String lastModifiedTime  = format.format(file.lastModified());//时间戳转换成对应格式的时间
-            FileInfo fileInfo = new FileInfo(fileName, fileLength, fileSize, lastModifiedTime);
-            fileList.add(fileInfo);
-        }
-        return R.success(fileList);
+        return findRecord;
     }
 
 

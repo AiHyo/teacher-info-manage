@@ -13,6 +13,8 @@ import java.util.List;
 public class TeacherDetailDto extends TeacherDto {
     //身份证信息
 //    private IdentityCardAudit identityCard;
+    //论文
+    private List<AcademicPaperDto> academicPaperList;
     //教育经历
     private List<EducationExperienceAudit> educationExperienceList;
     //工作经历
@@ -21,8 +23,6 @@ public class TeacherDetailDto extends TeacherDto {
     private List<HonoraryAwardAudit> HonoraryAwardList;
     //课题
     private List<TopicAudit> topicList;
-    //论文
-    private List<AcademicPaperAudit> academicPaperList;
     //项目
     private List<ProjectAudit> projectList;
     //软件著作

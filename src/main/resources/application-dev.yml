@@ -13,6 +13,7 @@ ip: localhost
 # 文件存储路径
 file:
   root-path: D:\idea\2023\files   # 根路径
-  template-file: D:\idea\2023\files\template\TemplateTeacherInfo.docx # 模板文件
+  template-file-word: D:\idea\2023\files\template\TemplateTeacherInfo.docx # word模板文件
+  template-file-excel: D:\idea\2023\files\template\导入教师账号模板.xlsx # excel模板文件
   temporary-path: D:\idea\2023\files\temporary  # 临时目录
 

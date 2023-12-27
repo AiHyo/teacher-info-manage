@@ -34,6 +34,7 @@ public enum CustomExceptionCodeMsg {
     POWER_NOT_MATCH(1030,"当前用户没有权限进行该操作"),
     NOT_FOUND_OFFICE(1031, "未找到教研室"),
     NOT_FOUND_COLLEGE(1032, "未找到该学院"),
+    NO_POWER_UPLOAD(1023, "权限不足,上传失败,您没有权限上传该信息"),
 
     ID_IS_NULL(1040, "id不能为空"),
     ID_NOT_EXIST(1041, "id不存在,未找到对应数据"),

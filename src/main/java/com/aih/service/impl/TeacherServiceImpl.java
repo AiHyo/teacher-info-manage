@@ -5,14 +5,11 @@ import cn.hutool.poi.excel.ExcelUtil;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
-import com.aih.entity.vo.AuditInfoDto;
-import com.aih.entity.vo.TeacherDto;
-import com.aih.entity.vo.TeacherExcelModel;
+import com.aih.entity.vo.*;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.aih.entity.*;
-import com.aih.entity.vo.TeacherDetailDto;
 import com.aih.mapper.*;
 import com.aih.service.ITeacherService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -78,13 +75,14 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Autowired
     private SoftwareAuditServiceImpl softwareService;
 
-
+    @Value("${default-password}")
+    String defaultPassword;
     @Value("${excel.file-name}")
     String defaultExcelName;
     @Value("${file.root-path}")
     String rootPath;
-    @Value("${file.template-file}")
-    String templateFile;
+    @Value("${file.template-file-word}")
+    String wordTemplateFile;
     @Value("${file.temporary-path}")
     String temporaryPath;
     private final String sep = File.separator;
@@ -105,6 +103,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             //返回数据
             HashMap<String, Object> data = new HashMap<>();
             data.put("token",token);
+            data.put("isDefault",teacher.getPassword().equals(defaultPassword));//是否为默认密码
             return data;
         }
         throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
@@ -240,7 +239,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     public XWPFTemplate getWordRender(Teacher teacher) throws IOException {
         //获取模板
-        File templateFile = ResourceUtils.getFile(this.templateFile);
+        File templateFile = ResourceUtils.getFile(this.wordTemplateFile);
         //准备数据
         Map<String, Object> map = new HashMap<>();
         map.put("userName", teacher.getUsername());
@@ -396,24 +395,33 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     public File getTeacherAttachmentFolder(List<Teacher> teacherList, List<String> attachmentList) {
         //创建临时教师附件文件夹
-        File tempTeacherAttachmentFolder = new File(temporaryPath + sep + "教师附件");
+        File tempTeacherAttachmentFolder = new File(temporaryPath + sep + "教师附件");   //教师附件
         FileUtil.mkdir(tempTeacherAttachmentFolder);
         for (Teacher teacher : teacherList) {
             Long tid = teacher.getId();
             //教师附件文件夹下新建以xx教师命名的目录
             String tempTeacherPath = tempTeacherAttachmentFolder + sep + teacher.getTeacherName();//教师附件->教师名
-            FileUtil.mkdir(tempTeacherPath);//////////////////////////////////////////////////if
+            FileUtil.mkdir(tempTeacherPath);//if
 
-            log.info("attachmentList={}", attachmentList);/////////////////////////////////iter
-            //找到该教师对应的文件夹       A
-            File findAcademicPaperFolder = new File(rootPath + sep + "academicPaper" + sep + tid);
-            FileUtil.mkdir(findAcademicPaperFolder);//防止不存在报错
-            //创建子文件夹               B
-            String tempAcademicPaperPath = tempTeacherPath + sep + "论文材料";//教师附件->教师名->论文材料
-            FileUtil.mkdir(tempAcademicPaperPath);
-            //copyContent(A,B)       A => b    复制A目录(下的文件) 到 B目录下,true表示覆盖
-            FileUtil.copyContent(findAcademicPaperFolder, new File(tempAcademicPaperPath), true);
-
+            log.info("attachmentList={}", attachmentList);//=== iter ===这里完善后需要依据attachmentList
+            // ==================================== academicPaper ====================================
+            LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = new LambdaQueryWrapper<>();
+            queryWrapper.eq(AcademicPaperAudit::getTid, tid)
+                    .eq(AcademicPaperAudit::getAuditStatus, 1)
+                    .eq(AcademicPaperAudit::getIsShow, 1);
+            List<Long> ids = academicPaperService.list(queryWrapper).stream().map(AcademicPaperAudit::getId).collect(Collectors.toList());
+            // 创建论文文件夹                B
+            String tempPath = tempTeacherPath + sep + "论文材料";//教师附件->教师名->论文材料
+            FileUtil.mkdir(tempPath);
+            // 遍历ids 依次找到对应的文件夹,并复制到临时文件夹中
+            for (Long id : ids) {
+                //找到该教师对应的文件夹       A
+                File findAcademicPaperFolder = new File(rootPath + sep + "academicPaper" + sep + tid + sep + id);
+                FileUtil.mkdir(findAcademicPaperFolder);//防止不存在报错
+                //copyContent(A,B)       A => B    复制A目录(下的文件) 到 B目录下,true表示覆盖
+                FileUtil.copyContent(findAcademicPaperFolder, new File(tempPath), true);
+            }
+            // ==================================== test ====================================
             /*  test 测试第二类信息附件*/
             File findTestFile = new File(rootPath + sep + "test" + sep + tid);
             FileUtil.mkdir(findTestFile);//防止不存在报错
@@ -426,6 +434,20 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
 
 
     //========================根据tid获取教师正在显示的各种信息========================
+    //论文
+    private List<AcademicPaperDto> queryAcademicPaperShowListByTeacherId(Long tid){
+        LambdaQueryWrapper<AcademicPaperAudit> queryWrapper_academicPaper = new LambdaQueryWrapper<>();
+        queryWrapper_academicPaper.eq(AcademicPaperAudit::getTid,tid);  //根据tid查询
+        queryWrapper_academicPaper.eq(AcademicPaperAudit::getAuditStatus,1);//审核通过
+        queryWrapper_academicPaper.eq(AcademicPaperAudit::getIsShow,1);     //正在显示
+        queryWrapper_academicPaper.orderByAsc(AcademicPaperAudit::getPublishDate);  //按发表时间升序
+        List<Long> ids = academicPaperService.list(queryWrapper_academicPaper).stream().map(AcademicPaperAudit::getId).collect(Collectors.toList());
+        List<AcademicPaperDto> collect = ids.stream().map((id) -> {
+            AcademicPaperDto dto = academicPaperService.queryDtoById(id);
+            return dto;
+        }).collect(Collectors.toList());
+        return collect;
+    }
     //身份证材料
     public IdentityCardAudit queryIdentityCardShowByTid(Long tid){
         LambdaQueryWrapper<IdentityCardAudit> queryWrapper_identityCard = new LambdaQueryWrapper<>();
@@ -469,15 +491,6 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         queryWrapper_topic.eq(TopicAudit::getIsShow,1);     //正在显示
         queryWrapper_topic.orderByAsc(TopicAudit::getStaDate);  //按开始时间升序
         return topicService.list(queryWrapper_topic);
-    }
-    //论文
-    private List<AcademicPaperAudit> queryAcademicPaperShowListByTeacherId(Long tid){
-        LambdaQueryWrapper<AcademicPaperAudit> queryWrapper_academicPaper = new LambdaQueryWrapper<>();
-        queryWrapper_academicPaper.eq(AcademicPaperAudit::getTid,tid);  //根据tid查询
-        queryWrapper_academicPaper.eq(AcademicPaperAudit::getAuditStatus,1);//审核通过
-        queryWrapper_academicPaper.eq(AcademicPaperAudit::getIsShow,1);     //正在显示
-        queryWrapper_academicPaper.orderByAsc(AcademicPaperAudit::getPublishDate);  //按发表时间升序
-        return academicPaperService.list(queryWrapper_academicPaper);
     }
     //项目
     private List<ProjectAudit> queryProjectShowListByTeacherId(Long tid){

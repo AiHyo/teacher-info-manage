@@ -2,6 +2,7 @@ package com.aih.mapper;
 
 import com.aih.entity.Role;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
 
@@ -15,4 +16,6 @@ import java.util.List;
  */
 public interface RoleMapper extends BaseMapper<Role> {
 
+    @Select("select * from role where id in (#{rids})")
+    List<Role> selectByRids(List<Long> rids);
 }

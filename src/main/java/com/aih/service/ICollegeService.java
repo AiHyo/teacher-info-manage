@@ -15,4 +15,5 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 public interface ICollegeService extends IService<College> {
 
+    Page<College> getAllCollege(Integer pageNum, Integer pageSize, String collegeName);
 }

@@ -9,6 +9,7 @@ import com.aih.entity.vo.TeacherDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.deepoove.poi.XWPFTemplate;
+import org.apache.ibatis.annotations.Delete;
 
 import java.io.File;
 import java.io.IOException;
@@ -48,5 +49,4 @@ public interface ITeacherService extends IService<Teacher> {
     File getTeacherAttachmentFolder(List<Teacher> teacherList, List<String> attachmentList);
 
     Page<AuditInfoDto> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn);
-
 }

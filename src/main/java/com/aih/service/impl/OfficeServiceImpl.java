@@ -31,24 +31,46 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
     @Autowired
     private CollegeMapper collegeMapper;
     @Override
-    public Page<OfficeDto> getAllOffice(Integer pageNum, Integer pageSize, String officeName) {
+    public Page<OfficeDto> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName) {
         Long cid = UserInfoContext.getUser().getCid();
         Page<Office> pageInfo = new Page<>(pageNum,pageSize);
-        //根据cid排序 分页查询
         LambdaQueryWrapper<Office> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(Office::getCid,cid);
-        queryWrapper.orderByDesc(Office::getCid);
+        queryWrapper.orderByAsc(Office::getCid); //根据学院id排序
         queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
         this.baseMapper.selectPage(pageInfo, queryWrapper);
         //Dto处理
         List<OfficeDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            OfficeDto officeDto = new OfficeDto();
-            BeanUtils.copyProperties(item, officeDto);
+            OfficeDto dto = new OfficeDto();
+            BeanUtils.copyProperties(item, dto);
             College college = collegeMapper.selectById(item.getCid());
             if (college != null) {
-                officeDto.setCollegeName(college.getCollegeName());
+                dto.setCollegeName(college.getCollegeName());
             }
-            return officeDto;
+            return dto;
+        }).collect(Collectors.toList());
+        Page<OfficeDto> dtoPage = new Page<>(pageNum,pageSize);
+        BeanUtils.copyProperties(pageInfo,dtoPage,"records");
+        dtoPage.setRecords(collect);
+        return dtoPage;
+    }
+
+    @Override
+    public Page<OfficeDto> getAllOffice(Integer pageNum, Integer pageSize, String officeName) {
+        Page<Office> pageInfo = new Page<>(pageNum,pageSize);
+        LambdaQueryWrapper<Office> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.orderByAsc(Office::getCid); //根据学院id排序
+        queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
+        this.baseMapper.selectPage(pageInfo, queryWrapper);
+        //Dto处理
+        List<OfficeDto> collect = pageInfo.getRecords().stream().map((item) -> {
+            OfficeDto dto = new OfficeDto();
+            BeanUtils.copyProperties(item, dto);
+            College college = collegeMapper.selectById(item.getCid());
+            if (college != null) {
+                dto.setCollegeName(college.getCollegeName());
+            }
+            return dto;
         }).collect(Collectors.toList());
         Page<OfficeDto> dtoPage = new Page<>(pageNum,pageSize);
         BeanUtils.copyProperties(pageInfo,dtoPage,"records");

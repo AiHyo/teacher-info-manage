@@ -1,5 +1,6 @@
 package com.aih.service.impl;
 
+import cn.hutool.core.util.StrUtil;
 import com.aih.entity.College;
 import com.aih.entity.Office;
 import com.aih.entity.vo.OfficeDto;
@@ -24,5 +25,11 @@ import java.util.List;
 @Service
 public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> implements ICollegeService {
 
-
+    @Override
+    public Page<College> getAllCollege(Integer pageNum, Integer pageSize, String collegeName) {
+        Page<College> page = new Page<>(pageNum,pageSize);
+        LambdaQueryWrapper<College> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.like(StrUtil.isNotBlank(collegeName),College::getCollegeName,collegeName);
+        return page(page,queryWrapper);
+    }
 }

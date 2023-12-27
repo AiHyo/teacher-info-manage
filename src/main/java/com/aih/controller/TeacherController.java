@@ -9,9 +9,13 @@ import com.aih.common.interceptor.AuthAccess;
 import com.aih.common.aop_log.LogAnnotation;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
+import com.aih.entity.Role;
 import com.aih.entity.Teacher;
+import com.aih.entity.TeacherRole;
 import com.aih.entity.vo.AuditInfoDto;
 import com.aih.entity.vo.TeacherDto;
+import com.aih.mapper.RoleMapper;
+import com.aih.mapper.TeacherRoleMapper;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
@@ -36,6 +40,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 教师(用户) Controller
@@ -51,6 +56,10 @@ public class TeacherController {
 
     @Autowired
     private ITeacherService teacherService;
+    @Autowired
+    private RoleMapper roleMapper;
+    @Autowired
+    private TeacherRoleMapper teacherRoleMapper;
     @Autowired
     private PasswordEncoder passwordEncoder;
     @Resource
@@ -139,6 +148,39 @@ public class TeacherController {
         teacherService.updateById(teacher);
         return R.success("修改教师基础信息成功");
     }
+    // == role ==
+    @ApiOperation("查看所有的职务")
+    @GetMapping("/showRoleList")
+    public R<List<Role>> showRoleList(){
+        return R.success(roleMapper.selectList(null));
+    }
+    @ApiOperation("查看自己的职务")
+    @GetMapping("/showMyRoleList")
+    public R<List<Role>> showMyRoleList(){
+        Long tid = UserInfoContext.getUser().getId();
+        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
+        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Role::getId,rids);
+        return R.success(roleMapper.selectList(queryWrapper));
+    }
+    @ApiOperation("修改自己的职务")
+    @PutMapping("/updateRole")
+    public R<?> updateRole(@RequestParam("rids") List<Long> rids){
+        Long tid = UserInfoContext.getUser().getId();
+        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Role::getId,rids);
+        List<Role> roleList = roleMapper.selectList(queryWrapper);
+        if (roleList.size()!=rids.size()) {
+            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
+        }
+        //删除tid的所有数据
+        teacherRoleMapper.deleteTeacherRoleByTid(tid);
+        //插入新的数据
+        for (Long rid : rids) {
+            teacherRoleMapper.insert(new TeacherRole(tid,rid));
+        }
+        return R.success("修改角色成功");
+    }
 
     /**
      * test接口 用于测试
@@ -151,6 +193,8 @@ public class TeacherController {
         teacherService.save(teacher);
         return R.success("新增教师用户成功");
     }
+
+    //
 
 
     /////////////////////////////////////////////审核员专场/////////////////////////////////////////////

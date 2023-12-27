@@ -8,9 +8,7 @@ import cn.hutool.poi.excel.ExcelWriter;
 import com.aih.common.aop_log.LogAnnotation;
 import com.aih.entity.*;
 import com.aih.entity.vo.*;
-import com.aih.mapper.CollegeMapper;
-import com.aih.mapper.OfficeMapper;
-import com.aih.mapper.RequestCollegeChangeMapper;
+import com.aih.mapper.*;
 import com.aih.service.*;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
@@ -35,6 +33,7 @@ import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 管理员 Controller
@@ -53,6 +52,10 @@ public class AdminController {
     private IAdminService adminService;
     @Autowired
     private ITeacherService teacherService;
+    @Autowired
+    private RoleMapper roleMapper;
+    @Autowired
+    private TeacherRoleMapper teacherRoleMapper;
     @Autowired
     private CollegeMapper collegeMapper;
     @Autowired
@@ -239,13 +242,78 @@ public class AdminController {
         return R.success("删除教师成功");
     }
 
+    // ============================= role =============================
+    @ApiOperation("查看所有职务")
+    @GetMapping("/showRoleList")
+    public R<List<Role>> getAllRole() {
+        return R.success(roleMapper.selectList(null));
+    }
+
+    /**
+     * @param roleName 新职务名
+     */
+    @ApiOperation("增加职务")
+    @PostMapping("/addRole")
+    public R<?> addRole(@RequestParam String roleName) {
+        Role role = new Role();
+        role.setRoleName(roleName);
+        roleMapper.insert(role);
+        return R.success("增加职务成功");
+    }
+
+    /**
+     * 根据tid查看教师的职务。检验tid是否存在/有无权限。
+     * @param tid
+     * @return
+     */
+    @ApiOperation("查看教师的职务")
+    @GetMapping("/showTeacherRoleList/{tid}")
+    public R<List<Role>> showMyRoleList(@PathVariable Long tid){
+        this.checkTeacherIds(CollUtil.newArrayList(tid));//检验tid是否存在/有无权限
+        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
+        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Role::getId,rids);
+        return R.success(roleMapper.selectList(queryWrapper));
+    }
+    /** 根据tid和rids修改教师的职务。检验有无对tid的权限,rids是否都存在
+     * @param tid 教师id
+     * @param rids 职务id列表
+     */
+    @ApiOperation("修改教师的职务")
+    @PutMapping("/updateRole/{tid}")
+    public R<?> updateRole(@PathVariable Long tid,@RequestParam("rids") List<Long> rids){
+        this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
+        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Role::getId,rids);
+        List<Role> roleList = roleMapper.selectList(queryWrapper);
+        if (roleList.size()!=rids.size()) {
+            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
+        }
+        //删除tid的所有数据
+        teacherRoleMapper.deleteTeacherRoleByTid(tid);
+        //插入新的数据
+        for (Long rid : rids) {
+            teacherRoleMapper.insert(new TeacherRole(tid,rid));
+        }
+        return R.success("修改角色成功");
+    }
+
+    /**
+     * @param id      职务id
+     */
+    @ApiOperation("删除职务")
+    @DeleteMapping("/deleteRole/{id}")
+    public R<?> deleteRole(@PathVariable Long id) {
+        roleMapper.deleteById(id);
+        return R.success("删除职务成功");
+    }
     // ============================= 办公室 =============================
     @ApiOperation("查看学院下办公室")
     @GetMapping("/getAllOffice")
     public R<Page<OfficeDto>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
                                               @RequestParam("pageSize") Integer pageSize,
                                               @RequestParam(value = "officeName", required = false) String officeName){
-        return R.success(officeService.getAllOffice(pageNum,pageSize,officeName));
+        return R.success(officeService.getOfficeByCollege(pageNum,pageSize,officeName));
     }
     /**
      * 在当前学院添加办公室

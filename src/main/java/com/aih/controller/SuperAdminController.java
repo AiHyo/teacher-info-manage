@@ -1,5 +1,6 @@
 package com.aih.controller;
 
+import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
@@ -8,6 +9,7 @@ import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
 import com.aih.entity.vo.OfficeDto;
+import com.aih.entity.vo.TeacherExcelReader;
 import com.aih.service.*;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
@@ -21,9 +23,15 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * 超级管理员 Controller
@@ -61,12 +69,42 @@ public class SuperAdminController {
         return R.success("创建成功");
     }
 
+    @Value("${file.template-file-excel}")
+    String excelTemplateFile;
+    //下载导入教师账号模板文件
+    @ApiOperation("下载导入所需文件模板")
+    @GetMapping("/downloadExcelTemplate")
+    public R<?> downloadExcelTemplate(HttpServletResponse response) throws IOException {
+        File file = new File(excelTemplateFile);
+        //对文件名编码,解决中文文件名乱码问题
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));  // 下载
+        //response.addHeader("Content-Disposition", "inline;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 预览
+        byte[] bytes = FileUtil.readBytes(file);
+        ServletOutputStream outputStream = response.getOutputStream();
+        outputStream.write(bytes);
+        outputStream.flush();
+        outputStream.close();
+        return R.success(excelTemplateFile);
+    }
+
     @ApiOperation("Excel批量导入教师信息")
     @PostMapping("/import")
     @Transactional(rollbackFor=Exception.class) //事务回滚
     public R<?> importExcel(MultipartFile file) throws IOException {
-        ExcelReader reader = ExcelUtil.getReader(file.getInputStream());
-        List<Teacher> teacherList = reader.readAll(Teacher.class);
+        InputStream inputStream = file.getInputStream();//字节输入流
+        ExcelReader reader = ExcelUtil.getReader(inputStream);//通过输入流创建ExcelReader 对象
+        reader.addHeaderAlias("手机号", "phone");
+        // 读取
+        List<TeacherExcelReader> readerList = reader.readAll(TeacherExcelReader.class);
+        // 处理成需要插入的Teacher数据
+        List<Teacher> teacherList = readerList.stream().map(obj -> {
+            String phone = obj.getPhone();
+            Teacher teacher = new Teacher();
+            teacher.setUsername(phone); //登录账号默认手机号
+            teacher.setPassword(passwordEncoder.encode(defaultPassword));
+            teacher.setPhone(obj.getPhone());
+            return teacher;
+        }).collect(Collectors.toList());
         try {
             teacherService.saveBatch(teacherList);
         } catch (Exception e) {
@@ -260,7 +298,7 @@ public class SuperAdminController {
     public R<Page<OfficeDto>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
                                              @RequestParam("pageSize") Integer pageSize,
                                               @RequestParam(required = false) String officeName){
-        return R.success(officeService.getAllOffice(pageNum,pageSize, officeName));
+        return R.success(officeService.getOfficeByCollege(pageNum,pageSize, officeName));
     }
     /**
      * 添加办公室,需要officeName办公室名称 & cid学院id。 检验cid是否存在,不存在抛出异常
