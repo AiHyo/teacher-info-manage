@@ -30,7 +30,7 @@ public class EducationExperienceAuditServiceImpl extends ServiceImpl<EducationEx
     @Override
     public List<EducationExperienceAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的教育经历审核:即学院下的所有审核
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(EducationExperienceAudit::getTid, teacherIds);
@@ -38,7 +38,7 @@ public class EducationExperienceAuditServiceImpl extends ServiceImpl<EducationEx
     }
     @Override
     public List<EducationExperienceAudit> queryByCidAndAuditStatus() {
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         LambdaQueryWrapper<EducationExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(EducationExperienceAudit::getTid, teacherIds);
         queryWrapper.eq(EducationExperienceAudit::getAuditStatus,0);

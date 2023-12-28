@@ -30,7 +30,7 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
     @Override
     public List<ProjectAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的项目审核:即学院下的所有审核
         LambdaQueryWrapper<ProjectAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(ProjectAudit::getTid, teacherIds);

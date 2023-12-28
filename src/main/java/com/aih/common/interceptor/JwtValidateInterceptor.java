@@ -41,13 +41,10 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
         }
 
         String token  = request.getHeader("token");
-//        log.debug(request.getRequestURI() + "需要验证： " + token);
-        log.debug("================================token{}",token);
+/*        log.debug(request.getRequestURI() + "需要验证： " + token);
+        log.debug("================================token{}",token);*/
         if(token == null){
             throw new CustomException(CustomExceptionCodeMsg.TOKEN_INVALID);
-            /*response.setContentType("application/json;charset=utf-8");
-            R<Object> fail = R.error(103, "token解析失败,请重新登录");
-            response.getWriter().write(JSON.toJSONString(fail));*/
         }
 
         //解析token,并将id,oid,cid,createDate放入上下文
@@ -61,9 +58,9 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
                 case "Teacher":
                     Teacher teacher = jwtUtil.parseToken(token, Teacher.class);
                     if (teacher.getIsAuditor()==0){
-                        user.setRole(RoleType.TEACHER);
+                        user.setRoleType(RoleType.TEACHER);
                     }else {
-                        user.setRole(RoleType.AUDITOR);
+                        user.setRoleType(RoleType.AUDITOR);
                     }
                     user.setId(teacher.getId());
                     user.setOid(teacher.getOid());
@@ -71,7 +68,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
                     user.setCreateDate(teacher.getCreateDate());
                     break;
                 case "Admin": {
-                    user.setRole(RoleType.ADMIN);
+                    user.setRoleType(RoleType.ADMIN);
                     Admin admin = jwtUtil.parseToken(token, Admin.class);
                     user.setId(admin.getId());
                     user.setCid(admin.getCid());
@@ -79,7 +76,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
                     break;
                 }
                 case "SuperAdmin": {
-                    user.setRole(RoleType.SUPER_ADMIN);
+                    user.setRoleType(RoleType.SUPER_ADMIN);
                     SuperAdmin admin = jwtUtil.parseToken(token, SuperAdmin.class);
                     user.setId(admin.getId());
                     break;

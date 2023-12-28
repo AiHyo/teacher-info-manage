@@ -3,13 +3,12 @@ package com.aih.service;
 import cn.hutool.poi.excel.ExcelWriter;
 import com.aih.entity.IdentityCardAudit;
 import com.aih.entity.Teacher;
-import com.aih.entity.vo.AuditInfoDto;
+import com.aih.entity.vo.audit.AuditInfoDto;
 import com.aih.entity.vo.TeacherDetailDto;
 import com.aih.entity.vo.TeacherDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.deepoove.poi.XWPFTemplate;
-import org.apache.ibatis.annotations.Delete;
 
 import java.io.File;
 import java.io.IOException;

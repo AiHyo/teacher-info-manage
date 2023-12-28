@@ -6,7 +6,7 @@ import cn.hutool.core.util.ZipUtil;
 import com.aih.common.interceptor.AuthAccess;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
-import com.aih.entity.vo.AcademicPaperDto;
+import com.aih.entity.vo.audit.AcademicPaperDto;
 import com.aih.mapper.TeacherMapper;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
@@ -14,6 +14,7 @@ import com.aih.utils.vo.FileInfo;
 import com.aih.utils.vo.R;
 import com.aih.entity.AcademicPaperAudit;
 import com.aih.service.IAcademicPaperAuditService;
+import com.aih.utils.vo.RoleType;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
@@ -205,8 +206,7 @@ public class AcademicPaperAuditController {
         if(auditStatus!=null){
             MyUtil.checkAuditStatus(auditStatus);
         }
-        Long uid = UserInfoContext.getUser().getId();
-        if (uid.toString().charAt(0) != '1' || teacherMapper.selectById(uid).getIsAuditor()!=1){
+        if ( UserInfoContext.getUser().getRoleType() != RoleType.AUDITOR ){
             throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
         }
 //        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
@@ -230,10 +230,31 @@ public class AcademicPaperAuditController {
         if(auditStatus!=null){
             MyUtil.checkAuditStatus(auditStatus);
         }
-        if (UserInfoContext.getUser().getId().toString().charAt(0) != '2'){
+        if (UserInfoContext.getUser().getRoleType() != RoleType.ADMIN){
             throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
         }
         return R.success(academicPaperService.queryRecordsByCid(pageNum,pageSize,auditStatus,title,onlyOwn));
+    }
+
+    //管理员/审核员
+    /**
+     * 管理员/审核员：根据个人携带的token，查询自己上任后手下的审核信息,按审核状态/时间排序。auditStatus不合法/不是审核者,会抛出自定义异常
+     * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
+     * @param onlyOwn 是否只看自己的(可选) 默认false
+     **/
+    @ApiOperation(value = "[管理员/审核员]查询手下的审核信息")
+    @GetMapping("/queryPowerRecords")
+    public R<Page<AcademicPaperDto>> queryPowerRecords(@RequestParam("pageNum") Integer pageNum,
+                                                       @RequestParam("pageSize") Integer pageSize,
+                                                       @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
+                                                       @RequestParam(value = "onlyOwn",required = false,defaultValue = "false") Boolean onlyOwn) {
+        if(auditStatus!=null){
+            MyUtil.checkAuditStatus(auditStatus);
+        }
+        if (UserInfoContext.getUser().getRoleType() != RoleType.ADMIN && UserInfoContext.getUser().getRoleType() != RoleType.AUDITOR){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
+        }
+        return R.success(academicPaperService.queryPowerRecords(pageNum,pageSize,auditStatus,onlyOwn));
     }
 
 
@@ -281,12 +302,12 @@ public class AcademicPaperAuditController {
         ArrayList<String> urls = new ArrayList<>();
         for (MultipartFile file : fileList) {
             String fileName = file.getOriginalFilename(); // abc.png 文件全名
-            /*  String mainName = FileUtil.mainName(fileName); // abc 文件名
-            String extName = FileUtil.extName(fileName);   // png 文件后缀*/
+            String mainName = FileUtil.mainName(fileName); // abc 文件名
+            String extName = FileUtil.extName(fileName);   // png 文件后缀
             // 如果当前上传的文件已经存在了，那么这个时候我就要重名一个文件名称
             int i = 1; // 采用windows文件重命名方法
             while (FileUtil.exist(parentPath + sep + fileName)) {
-                fileName = fileName + "(" + i + ")";
+                fileName = mainName + "(" + i + ")" + "." + extName;
                 i++;
             }
             File saveFile = new File(parentPath + sep + fileName);

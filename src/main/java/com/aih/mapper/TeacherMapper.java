@@ -20,9 +20,6 @@ import java.util.List;
 public interface TeacherMapper extends BaseMapper<Teacher> {
     List<String> getRoleNameByTeacherId(Long tid);
 
-    @Select("select id from teacher where cid = #{cid} and is_auditor = 1")
-    List<Long> getAuditorIdsByCid(Long cid);
-
     @Select("select id from teacher where oid = #{oid}")
     List<Long> getTeacherIdsByOid(Long oid);
 

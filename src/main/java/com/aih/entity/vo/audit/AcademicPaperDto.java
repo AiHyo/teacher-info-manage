@@ -1,4 +1,4 @@
-package com.aih.entity.vo;
+package com.aih.entity.vo.audit;
 
 import com.aih.entity.AcademicPaperAudit;
 import lombok.Data;

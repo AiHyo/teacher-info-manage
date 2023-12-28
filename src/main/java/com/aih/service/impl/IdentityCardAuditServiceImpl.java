@@ -29,7 +29,7 @@ public class IdentityCardAuditServiceImpl extends ServiceImpl<IdentityCardAuditM
     @Override
     public List<IdentityCardAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的身份证审核:即学院下的所有审核
         LambdaQueryWrapper<IdentityCardAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(IdentityCardAudit::getTid, teacherIds);

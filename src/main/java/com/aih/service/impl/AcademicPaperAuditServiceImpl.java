@@ -1,13 +1,14 @@
 package com.aih.service.impl;
 
 import com.aih.entity.*;
-import com.aih.entity.vo.AcademicPaperDto;
+import com.aih.entity.vo.audit.AcademicPaperDto;
 import com.aih.mapper.*;
 import com.aih.service.IAcademicPaperAuditService;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
+import com.aih.utils.vo.RoleType;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -122,6 +123,7 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
         this.baseMapper.update(null, updateWrapper);//只更新isShow字段,不受自动填充影响
     }
 
+
     @Override
     public String deleteRecord(Long id)
     {
@@ -162,20 +164,63 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
         return "删除审核记录成功";
     }
 
+    @Override
+    public Page<AcademicPaperDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn) {
+        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
+        Page<AcademicPaperDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        //getCanAuditTidsByOid 根据oid查询有权利审核的
+        List<Long> queryTids = null;
+        if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
+            queryTids = teacherMapper.getCanAuditTidsByOid(UserInfoContext.getUser().getOid());
+        }else if (UserInfoContext.getUser().getRoleType() == RoleType.ADMIN){
+            queryTids = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
+        }
+        log.info("queryTids:{}", queryTids);
+        if (queryTids != null && queryTids.isEmpty()) { //没有找到教师就返回空的
+            return dtoPageInfo;
+        }
+        //再根据tid查询所有的审核:即教研室下的所有审核
+        LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
+        queryWrapper.in(AcademicPaperAudit::getTid, queryTids)
+                .eq((auditStatus != null), AcademicPaperAudit::getAuditStatus, auditStatus) //0,1,2
+                .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())//上任以来(针对未审核的)
+                .eq(onlyOwn, AcademicPaperAudit::getAid, UserInfoContext.getUser().getId())//只看自己的(针对已审核的)
+                .orderByAsc(auditStatus==null, AcademicPaperAudit::getAuditStatus)
+                .orderByDesc(AcademicPaperAudit::getCreateTime);//审核状态相同的按创建时间越晚的显示在最前
+        // 删除过记录的情况：需要判断删除角色
+        if (auditStatus != null && auditStatus != 0){
+            Long uid = UserInfoContext.getUser().getId();
+            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                    .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                    .or().isNull(AcademicPaperAudit::getDeleteRoles));
+        }
+//        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
+        this.baseMapper.selectPage(pageInfo, queryWrapper); //
+        //遍历每一条records(当前页下的所有数据)
+        List<AcademicPaperDto> collect = pageInfo.getRecords().stream().map((item) -> {
+            AcademicPaperDto dto = this.getDto(item);
+            return dto;
+        }).collect(Collectors.toList());
+
+        //对象拷贝，拷贝一下查询到的条目数
+        BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
+        dtoPageInfo.setRecords(collect);//将collect赋值给records
+        return dtoPageInfo;
+    }
 
     @Override
     public Page<AcademicPaperDto> queryRecordsByOid(Integer pageNum, Integer pageSize, Integer auditStatus, String title, Boolean onlyOwn) {
         Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
         Page<AcademicPaperDto> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
-        List<Long> teacherIds = teacherMapper.getCanAuditTidsByOid(UserInfoContext.getUser().getOid());
-        log.info("teacherIds:{}", teacherIds);
-        if (teacherIds.isEmpty()){ //没有找到教师就返回空的
+        List<Long> queryTids = teacherMapper.getCanAuditTidsByOid(UserInfoContext.getUser().getOid());
+        log.info("queryTids:{}", queryTids);
+        if (queryTids.isEmpty()){ //没有找到教师就返回空的
             return dtoPageInfo;
         }
         //再根据tid查询所有的审核:即教研室下的所有审核
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.in(AcademicPaperAudit::getTid, teacherIds)
+        queryWrapper.in(AcademicPaperAudit::getTid, queryTids)
                 .eq((auditStatus != null), AcademicPaperAudit::getAuditStatus, auditStatus) //0,1,2
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())//上任以来(针对未审核的)
                 .eq(onlyOwn, AcademicPaperAudit::getAid, UserInfoContext.getUser().getId())//只看自己的(针对已审核的)
@@ -207,15 +252,15 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
         Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
         Page<AcademicPaperDto> dtoPageInfo = new Page<>(pageNum, pageSize);
         //先根据cid查询对应学院下的所有tid
-        List<Long> auditorIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
-        log.info("auditorIds:{}", auditorIds);
-        if (auditorIds.isEmpty()){ //没有找到教师就返回空的
+        List<Long> queryTids = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
+        log.info("queryTids:{}", queryTids);
+        if (queryTids.isEmpty()){ //没有找到教师就返回空的
             return dtoPageInfo;
         }
         //再根据tid查询所有的审核:即学院下的所有审核
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper;
         queryWrapper = Wrappers.lambdaQuery();
-        queryWrapper.in(AcademicPaperAudit::getTid, auditorIds)
+        queryWrapper.in(AcademicPaperAudit::getTid, queryTids)
                 .eq(auditStatus!=null,AcademicPaperAudit::getAuditStatus, auditStatus) //0,1,2
                 .ge(AcademicPaperAudit::getCreateTime, UserInfoContext.getUser().getCreateDate().atStartOfDay())//上任以来(针对未审核的)
                 .eq(onlyOwn, AcademicPaperAudit::getAid, UserInfoContext.getUser().getId())//只看自己的(针对已审核的)

@@ -30,7 +30,7 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
     @Override
     public List<TopicAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的课题审核:即学院下的所有审核
         LambdaQueryWrapper<TopicAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(TopicAudit::getTid, teacherIds);

@@ -10,7 +10,7 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 public class User {
-    private RoleType role;
+    private RoleType roleType;
     private Long id;
     private Long oid;
     private Long cid;

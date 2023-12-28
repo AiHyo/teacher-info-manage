@@ -29,7 +29,7 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
     @Override
     public List<HonoraryAwardAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的荣誉奖项审核:即学院下的所有审核
         LambdaQueryWrapper<HonoraryAwardAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(HonoraryAwardAudit::getTid, teacherIds);

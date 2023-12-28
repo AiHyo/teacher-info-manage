@@ -8,6 +8,7 @@ import cn.hutool.poi.excel.ExcelWriter;
 import com.aih.common.aop_log.LogAnnotation;
 import com.aih.entity.*;
 import com.aih.entity.vo.*;
+import com.aih.entity.vo.audit.AuditInfoDto;
 import com.aih.mapper.*;
 import com.aih.service.*;
 import com.aih.common.exception.CustomException;
@@ -179,17 +180,17 @@ public class AdminController {
      */
     @ApiOperation("查询学院下的教师")
     @GetMapping("/getTeacherList")
-    public R<Page<TeacherDto>> getTeacherList(@RequestParam("pageNum") Integer pageNum,
-                                              @RequestParam("pageSize") Integer pageSize,
-                                              @RequestParam(value = "keyword", required = false) String keyword,
-                                              @RequestParam(value = "oid", required = false) Long oid,
-                                              @RequestParam(value = "officeName", required = false) String officeName,
-                                              @RequestParam(value = "teacherName", required = false) String teacherName,
-                                              @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
-                                              @RequestParam(value = "gender", required = false) Integer gender,
-                                              @RequestParam(value = "ethnic", required = false) String ethnic,
-                                              @RequestParam(value = "birthplace", required = false) String birthplace,
-                                              @RequestParam(value = "address", required = false) String address) {
+    public R<Page<TeacherDto>> admin_GetTeacherList(@RequestParam("pageNum") Integer pageNum,
+                                                    @RequestParam("pageSize") Integer pageSize,
+                                                    @RequestParam(value = "keyword", required = false) String keyword,
+                                                    @RequestParam(value = "oid", required = false) Long oid,
+                                                    @RequestParam(value = "officeName", required = false) String officeName,
+                                                    @RequestParam(value = "teacherName", required = false) String teacherName,
+                                                    @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
+                                                    @RequestParam(value = "gender", required = false) Integer gender,
+                                                    @RequestParam(value = "ethnic", required = false) String ethnic,
+                                                    @RequestParam(value = "birthplace", required = false) String birthplace,
+                                                    @RequestParam(value = "address", required = false) String address) {
         return R.success(adminService.getTeacherList(pageNum,pageSize, keyword, oid,officeName,teacherName,isAuditor, gender, ethnic, birthplace, address));
     }
 
@@ -522,100 +523,100 @@ public class AdminController {
     }
 
 
-    //==========================================excel======================================
-    /**
-     * @param ids       （可选）
-     * @param oids      （可选）教研室oids
-     * @param fileName  （可选）导出excel的名称,默认"教师信息表"
-     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
-     * @throws IOException
-     */
-    @LogAnnotation(module = "管理员", operator = "Excel批量导出教师信息")
-    @ApiOperation("Excel批量导出教师信息")
-    @GetMapping("/export")
-    public void exportExcel(@RequestParam(value = "ids", required = false) List<Long> ids,
-                            @RequestParam(value = "oids", required = false) List<Long> oids,
-                            @RequestParam(value = "fileName", required = false) String fileName,
-                            @RequestParam(value = "fieldList", required = false) List<String> fieldList) throws IOException {
-        if (StrUtil.isBlank(fileName)) {
-            fileName = defaultExcelName;
-        }
-        List<Teacher> teacherList = this.getTeacherList(ids, oids);
-        // ===ExcelWriter:excel写入器===
-        ExcelWriter writer = teacherService.getMyExcelWriter(teacherList, fileName, fieldList);
-        //在浏览器下载：设置response并写出xlsx
-        fileName = URLEncoder.encode(fileName, "UTF-8");
-        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
-        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
-        ServletOutputStream outputStream = response.getOutputStream();
-        writer.flush(outputStream, true);//true 关闭输出流
-        writer.close();
-        outputStream.flush();
-        outputStream.close();
-    }
-
-    //==========================================word======================================
-    @ApiOperation("导出Word")
-    @GetMapping("/exportWord/{tid}")
-    public void exportWord(@PathVariable Long tid) throws IOException {
-        //判断权限
-        Teacher findTeacher = teacherService.getById(tid);
-        if (findTeacher == null) {
-            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
-        }
-        if (!findTeacher.getCid().equals(UserInfoContext.getUser().getCid())) {
-            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
-        }
-        //获取XWPFTemplate word写入器 渲染好数据的word
-        XWPFTemplate render = teacherService.getWordRender(findTeacher);
-        //在浏览器下载：设置response并写出docx
-        String fileName = URLEncoder.encode(findTeacher.getTeacherName() + "教师信息表", "UTF-8");
-        response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document;charset=utf-8");
-        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".docx");
-        ServletOutputStream outputStream = response.getOutputStream();
-        render.writeAndClose(outputStream);
-        render.close();//双重保障
-        outputStream.flush();
-        outputStream.close();
-    }
-
-
-    //============================================压缩包================================================
-
-    @ApiOperation("导出压缩包")
-    @GetMapping("/exportZip/")
-    @LogAnnotation(module="管理员",operator="导出压缩包")
-    public void exportZip(@RequestParam(value = "ids", required = false) List<Long> ids,
-                          @RequestParam(value = "oids", required = false) List<Long> oids,
-                          @RequestParam(value = "fieldList", required = false) List<String> fieldList,
-                          @RequestParam(value = "attachmentList", required = false) List<String> attachmentList) throws IOException {
-        //创建一个新的临时文件路径！！！
-        if (FileUtil.exist(temporaryPath)) {
-            FileUtil.del(temporaryPath);
-        }//创建临时zip包
-        File tempZipFile = new File(temporaryPath + sep + "test压缩.zip");
-        //需要压缩的文件列表
-        List<File> fileList = CollUtil.newArrayList();
-        //调用封装函数获取教师列表
-        List<Teacher> teacherList = this.getTeacherList(ids, oids);
-        //添加需要压缩的文件
-        fileList.add(teacherService.getTeacherAttachmentFolder(teacherList,attachmentList));//教师附件文件夹
-        fileList.add(teacherService.getMyExcelFile(teacherList, fieldList)); //excel
-        fileList.add(teacherService.getMyWordFolder(teacherList));           //word
-        fileList.add(new File(rootPath + sep + "qwq.jpg"));
-        //开始压缩
-        ZipUtil.zip(tempZipFile, true, fileList.toArray(new File[fileList.size()]));
-        //下载zip到浏览器！！！
-        MyUtil.downloadZip(tempZipFile, response);
-        //统一删除所有临时文件！！！！！！
-        FileUtil.del(temporaryPath);
-    }
+//    //==========================================excel======================================
+//    /**
+//     * @param ids       （可选）
+//     * @param oids      （可选）教研室oids
+//     * @param fileName  （可选）导出excel的名称,默认"教师信息表"
+//     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
+//     * @throws IOException
+//     */
+//    @LogAnnotation(module = "管理员", operator = "Excel批量导出教师信息")
+//    @ApiOperation("Excel批量导出教师信息")
+//    @GetMapping("/export")
+//    public void exportExcel(@RequestParam(value = "ids", required = false) List<Long> ids,
+//                            @RequestParam(value = "oids", required = false) List<Long> oids,
+//                            @RequestParam(value = "fileName", required = false) String fileName,
+//                            @RequestParam(value = "fieldList", required = false) List<String> fieldList) throws IOException {
+//        if (StrUtil.isBlank(fileName)) {
+//            fileName = defaultExcelName;
+//        }
+//        List<Teacher> teacherList = this.admin_GetTeacherList(ids, oids);
+//        // ===ExcelWriter:excel写入器===
+//        ExcelWriter writer = teacherService.getMyExcelWriter(teacherList, fileName, fieldList);
+//        //在浏览器下载：设置response并写出xlsx
+//        fileName = URLEncoder.encode(fileName, "UTF-8");
+//        response.setContentType("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;charset=utf-8");
+//        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".xlsx");
+//        ServletOutputStream outputStream = response.getOutputStream();
+//        writer.flush(outputStream, true);//true 关闭输出流
+//        writer.close();
+//        outputStream.flush();
+//        outputStream.close();
+//    }
+//
+//    //==========================================word======================================
+//    @ApiOperation("导出Word")
+//    @GetMapping("/exportWord/{tid}")
+//    public void exportWord(@PathVariable Long tid) throws IOException {
+//        //判断权限
+//        Teacher findTeacher = teacherService.getById(tid);
+//        if (findTeacher == null) {
+//            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
+//        }
+//        if (!findTeacher.getCid().equals(UserInfoContext.getUser().getCid())) {
+//            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+//        }
+//        //获取XWPFTemplate word写入器 渲染好数据的word
+//        XWPFTemplate render = teacherService.getWordRender(findTeacher);
+//        //在浏览器下载：设置response并写出docx
+//        String fileName = URLEncoder.encode(findTeacher.getTeacherName() + "教师信息表", "UTF-8");
+//        response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document;charset=utf-8");
+//        response.setHeader("Content-Disposition", "attachment;filename=" + fileName + ".docx");
+//        ServletOutputStream outputStream = response.getOutputStream();
+//        render.writeAndClose(outputStream);
+//        render.close();//双重保障
+//        outputStream.flush();
+//        outputStream.close();
+//    }
+//
+//
+//    //============================================压缩包================================================
+//
+//    @ApiOperation("导出压缩包")
+//    @GetMapping("/exportZip/")
+//    @LogAnnotation(module="管理员",operator="导出压缩包")
+//    public void exportZip(@RequestParam(value = "ids", required = false) List<Long> ids,
+//                          @RequestParam(value = "oids", required = false) List<Long> oids,
+//                          @RequestParam(value = "fieldList", required = false) List<String> fieldList,
+//                          @RequestParam(value = "attachmentList", required = false) List<String> attachmentList) throws IOException {
+//        //创建一个新的临时文件路径！！！
+//        if (FileUtil.exist(temporaryPath)) {
+//            FileUtil.del(temporaryPath);
+//        }//创建临时zip包
+//        File tempZipFile = new File(temporaryPath + sep + "test压缩.zip");
+//        //需要压缩的文件列表
+//        List<File> fileList = CollUtil.newArrayList();
+//        //调用封装函数获取教师列表
+//        List<Teacher> teacherList = this.admin_GetTeacherList(ids, oids);
+//        //添加需要压缩的文件
+//        fileList.add(teacherService.getTeacherAttachmentFolder(teacherList,attachmentList));//教师附件文件夹
+//        fileList.add(teacherService.getMyExcelFile(teacherList, fieldList)); //excel
+//        fileList.add(teacherService.getMyWordFolder(teacherList));           //word
+//        fileList.add(new File(rootPath + sep + "qwq.jpg"));
+//        //开始压缩
+//        ZipUtil.zip(tempZipFile, true, fileList.toArray(new File[fileList.size()]));
+//        //下载zip到浏览器！！！
+//        MyUtil.downloadZip(tempZipFile, response);
+//        //统一删除所有临时文件！！！！！！
+//        FileUtil.del(temporaryPath);
+//    }
 
 
 
     //==========================================封装方法=============================================
     //获取需要的teacherList
-    private List<Teacher> getTeacherList(List<Long> ids, List<Long> oids) {
+    private List<Teacher> admin_GetTeacherList(List<Long> ids, List<Long> oids) {
         Long u_cid = UserInfoContext.getUser().getCid();
         LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
         /*权限只有自己管理学院*/

@@ -2,7 +2,7 @@ package com.aih.service;
 
 import com.aih.entity.Admin;
 import com.aih.entity.RequestCollegeChange;
-import com.aih.entity.vo.AuditInfoDto;
+import com.aih.entity.vo.audit.AuditInfoDto;
 import com.aih.entity.vo.RequestCollegeChangeDto;
 import com.aih.entity.vo.TeacherDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;

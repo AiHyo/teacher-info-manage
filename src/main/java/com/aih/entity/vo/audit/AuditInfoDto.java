@@ -1,4 +1,4 @@
-package com.aih.entity.vo;
+package com.aih.entity.vo.audit;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -10,7 +10,7 @@ import java.time.LocalTime;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-
+// === 预览所有专用 === 可整合所有类型的实体类
 public class AuditInfoDto {
     String auditType; //审核类型
     Long id; //审核对象id

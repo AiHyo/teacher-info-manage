@@ -2,7 +2,7 @@ package com.aih.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.aih.entity.*;
-import com.aih.entity.vo.AuditInfoDto;
+import com.aih.entity.vo.audit.AuditInfoDto;
 import com.aih.entity.vo.RequestCollegeChangeDto;
 import com.aih.entity.vo.TeacherDto;
 import com.aih.mapper.*;

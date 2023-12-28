@@ -30,7 +30,7 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
     @Override
     public List<WorkExperienceAudit> queryByCid() {
         //先根据cid查询对应学院下的所有审核员tid
-        List<Long> teacherIds = teacherMapper.getAuditorIdsByCid(UserInfoContext.getUser().getCid());
+        List<Long> teacherIds = teacherMapper.getCanAuditTidsByCid(UserInfoContext.getUser().getCid());
         //再根据tid查询所有的工作经历审核:即学院下的所有审核
         LambdaQueryWrapper<WorkExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
         queryWrapper.in(WorkExperienceAudit::getTid, teacherIds);

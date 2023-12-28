@@ -1,6 +1,7 @@
 package com.aih.entity.vo;
 
 import com.aih.entity.*;
+import com.aih.entity.vo.audit.AcademicPaperDto;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;

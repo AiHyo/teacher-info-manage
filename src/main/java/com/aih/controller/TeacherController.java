@@ -12,7 +12,7 @@ import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.Role;
 import com.aih.entity.Teacher;
 import com.aih.entity.TeacherRole;
-import com.aih.entity.vo.AuditInfoDto;
+import com.aih.entity.vo.audit.AuditInfoDto;
 import com.aih.entity.vo.TeacherDto;
 import com.aih.mapper.RoleMapper;
 import com.aih.mapper.TeacherRoleMapper;
@@ -285,7 +285,7 @@ public class TeacherController {
         if (StrUtil.isBlank(fileName)) {
             fileName = defaultExcelName;
         }
-        List<Teacher> teacherList = this.getTeacherListByIds(ids);
+        List<Teacher> teacherList = this.auditor_GetTeacherList(ids);
         //获取ExcelWriter excel写入器 渲染好数据的excel
         ExcelWriter writer = teacherService.getMyExcelWriter(teacherList, fileName, fieldList);
         //在浏览器下载：设置response并写出xlsx
@@ -351,7 +351,7 @@ public class TeacherController {
         //需要压缩的文件列表
         List<File> fileList = CollUtil.newArrayList();
         //调用封装函数获取教师列表
-        List<Teacher> teacherList = this.getTeacherListByIds(ids);
+        List<Teacher> teacherList = this.auditor_GetTeacherList(ids);
         //添加需要压缩的文件
         fileList.add(teacherService.getTeacherAttachmentFolder(teacherList,attachmentList));//教师附件文件夹
         fileList.add(teacherService.getMyExcelFile(teacherList, fieldList)); //excel
@@ -367,7 +367,7 @@ public class TeacherController {
 
 
     //==========================================封装方法=============================================
-    private List<Teacher> getTeacherListByIds(List<Long> ids) { // 传入ids,先检验,再获取teacherList
+    private List<Teacher> auditor_GetTeacherList(List<Long> ids) { // 传入ids,先检验,再获取teacherList
         Long u_oid = UserInfoContext.getUser().getOid();
 //        Long u_oid = 1L;//测试用
         LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
@@ -387,7 +387,6 @@ public class TeacherController {
             queryWrapper.in(Teacher::getId, ids);
         } else log.info("没有选择指定教师,默认选择管理办公室下所有教师");
         return teacherService.list(queryWrapper);
-
     }
 
     private void checkIsAuditor() { //检查uid是否为审核员
