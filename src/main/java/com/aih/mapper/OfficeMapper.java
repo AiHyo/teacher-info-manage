@@ -25,4 +25,7 @@ public interface OfficeMapper extends BaseMapper<Office> {
                 "<if test='officeName!=null'> and office_name LIKE CONCAT('%', #{officeName}, '%')</if>" +
             "</script>")
     List<Office> getOfficeList(Long cid, String officeName);
+
+    @Select("select id from office where office_name = #{officeName} and deleted = 0")
+    Long getOidByName(String officeName);
 }

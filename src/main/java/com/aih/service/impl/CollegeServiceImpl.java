@@ -32,4 +32,10 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
         queryWrapper.like(StrUtil.isNotBlank(collegeName),College::getCollegeName,collegeName);
         return page(page,queryWrapper);
     }
+
+    @Override
+    public Long getCidByName(String collegeName) {
+        return this.baseMapper.getCidByName(collegeName);
+    }
+
 }

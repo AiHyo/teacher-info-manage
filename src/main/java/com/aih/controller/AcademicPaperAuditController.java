@@ -61,7 +61,7 @@ public class AcademicPaperAuditController {
     @ApiOperation(value = "[教师]提交论文审核")
     @PostMapping("/submit")
     public R<Long> saveAcademicPaperAudit(@RequestBody AcademicPaperAudit academicPaper){
-        if (UserInfoContext.getUser().getId().toString().charAt(0) != '1'){
+        if (UserInfoContext.getUser().getId().toString().charAt(0) != '1') {
             throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
         }
         academicPaperService.save(academicPaper);
@@ -135,26 +135,50 @@ public class AcademicPaperAuditController {
     }
 
 
+    // ================================= 查询 =================================
     /**
      * 教师：根据个人携带的token，查询自己的审核信息
      * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
      * @param pageNum 页码
      * @param pageSize 每页条数
-     * @param title 标题 （可选）
+     * @param keyword 模糊查询关键字(可选) 标题[title]
      */
     @ApiOperation(value = "[教师]查询自己审核记录")
     @GetMapping("/queryOwnRecord")
     public R<Page<AcademicPaperDto>> queryOwnRecord(@RequestParam(value = "auditStatus",required = false) Integer auditStatus,
                                                    @RequestParam("pageNum") Integer pageNum,
                                                    @RequestParam("pageSize") Integer pageSize,
-                                                   @RequestParam(value = "title",required = false) String title){
+                                                   @RequestParam(value = "keyword",required = false) String keyword){
         if(auditStatus!=null){
             MyUtil.checkAuditStatus(auditStatus);
         }
         if (UserInfoContext.getUser().getId().toString().charAt(0) != '1'){
             throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
         }
-        return R.success(academicPaperService.queryOwnRecord(pageNum,pageSize,auditStatus,title));
+        return R.success(academicPaperService.queryOwnRecord(pageNum,pageSize,auditStatus, keyword));
+    }
+
+    //管理员/审核员
+    /**
+     * 管理员/审核员：根据个人携带的token，查询自己上任后手下的审核信息,按审核状态/时间排序。auditStatus不合法/不是审核者,会抛出自定义异常
+     * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
+     * @param onlyOwn 是否只看自己的(可选) 默认false
+     * @param keyword 模糊查询关键字(可选) 标题[title]
+     **/
+    @ApiOperation(value = "[管理员/审核员]查询手下的审核信息")
+    @GetMapping("/queryPowerRecords")
+    public R<Page<AcademicPaperDto>> queryPowerRecords(@RequestParam("pageNum") Integer pageNum,
+                                                       @RequestParam("pageSize") Integer pageSize,
+                                                       @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
+                                                       @RequestParam(value = "onlyOwn",required = false,defaultValue = "false") Boolean onlyOwn,
+                                                       @RequestParam(value = "keyword",required = false) String keyword) {
+        if(auditStatus!=null){
+            MyUtil.checkAuditStatus(auditStatus);
+        }
+        if (UserInfoContext.getUser().getRoleType() != RoleType.ADMIN && UserInfoContext.getUser().getRoleType() != RoleType.AUDITOR){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
+        }
+        return R.success(academicPaperService.queryPowerRecords(pageNum,pageSize,auditStatus,onlyOwn,keyword));
     }
 
     //教师删除自己的审核通过记录,其实也就是修改isShow字段
@@ -170,9 +194,6 @@ public class AcademicPaperAuditController {
         return R.success("删除已生效信息成功");
     }
 
-
-
-
     //通用
     /**
      * 根据id查找记录,若未审核,只有tid申请者可操作,直接执行逻辑删除(删除记录全部人都看不见)。
@@ -187,76 +208,6 @@ public class AcademicPaperAuditController {
         String data = academicPaperService.deleteRecord(id);
         return R.success(data);
     }
-
-    //审核员
-    /**
-     * 审核员：根据个人携带的token，查询自己上任后手下的审核信息,按审核状态/时间排序。auditStatus不合法/不是审核员,会抛出自定义异常
-     * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
-     * @param title 标题 （可选）
-     * @param onlyOwn 是否只看自己的(可选) 默认false
-     **/
-    @ApiOperation(value = "[审核员]查询教研室下所有教师审核信息")
-    @GetMapping("/queryRecordsByOid")
-    public R<Page<AcademicPaperDto>> queryRecordsByOid(
-                                                     @RequestParam("pageNum") Integer pageNum,
-                                                     @RequestParam("pageSize") Integer pageSize,
-                                                     @RequestParam(value = "title",required = false) String title,
-                                                     @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
-                                                     @RequestParam(value = "onlyOwn",required = false,defaultValue = "false") Boolean onlyOwn) {
-        if(auditStatus!=null){
-            MyUtil.checkAuditStatus(auditStatus);
-        }
-        if ( UserInfoContext.getUser().getRoleType() != RoleType.AUDITOR ){
-            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
-        }
-//        Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        return R.success(academicPaperService.queryRecordsByOid(pageNum,pageSize,auditStatus,title,onlyOwn));
-    }
-
-    //管理员
-    /**
-     * 管理员：根据个人携带的token，查询自己上任后手下的审核信息,按审核状态/时间排序。auditStatus不合法/不是管理员,会抛出自定义异常
-     * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
-     * @param title 标题 （可选）
-     * @param onlyOwn 是否只看自己的(可选) 默认false
-     **/
-    @ApiOperation(value = "[管理员]查询学院下所有审核员审核信息")
-    @GetMapping("/queryAllByCid")
-    public R<Page<AcademicPaperDto>> queryAllByCid(@RequestParam("pageNum") Integer pageNum,
-                                                   @RequestParam("pageSize") Integer pageSize,
-                                                   @RequestParam(value = "title",required = false) String title,
-                                                   @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
-                                                   @RequestParam(value = "onlyOwn",required = false,defaultValue = "false") Boolean onlyOwn) {
-        if(auditStatus!=null){
-            MyUtil.checkAuditStatus(auditStatus);
-        }
-        if (UserInfoContext.getUser().getRoleType() != RoleType.ADMIN){
-            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
-        }
-        return R.success(academicPaperService.queryRecordsByCid(pageNum,pageSize,auditStatus,title,onlyOwn));
-    }
-
-    //管理员/审核员
-    /**
-     * 管理员/审核员：根据个人携带的token，查询自己上任后手下的审核信息,按审核状态/时间排序。auditStatus不合法/不是审核者,会抛出自定义异常
-     * @param auditStatus 0待审核 1审核通过 2审核驳回 （可选 不选默认全部）
-     * @param onlyOwn 是否只看自己的(可选) 默认false
-     **/
-    @ApiOperation(value = "[管理员/审核员]查询手下的审核信息")
-    @GetMapping("/queryPowerRecords")
-    public R<Page<AcademicPaperDto>> queryPowerRecords(@RequestParam("pageNum") Integer pageNum,
-                                                       @RequestParam("pageSize") Integer pageSize,
-                                                       @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
-                                                       @RequestParam(value = "onlyOwn",required = false,defaultValue = "false") Boolean onlyOwn) {
-        if(auditStatus!=null){
-            MyUtil.checkAuditStatus(auditStatus);
-        }
-        if (UserInfoContext.getUser().getRoleType() != RoleType.ADMIN && UserInfoContext.getUser().getRoleType() != RoleType.AUDITOR){
-            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
-        }
-        return R.success(academicPaperService.queryPowerRecords(pageNum,pageSize,auditStatus,onlyOwn));
-    }
-
 
 
     // =============================================== 附件 ===============================================
@@ -287,7 +238,7 @@ public class AcademicPaperAuditController {
      */
     @ApiOperation("[教师用户]上传附件")
     @PostMapping("/file/upload/{id}")
-    public R<ArrayList<String>> upload(@PathVariable("id") Long id,@RequestParam("fileList") MultipartFile[] fileList) throws IOException {
+    public R<ArrayList<String>> upload(@PathVariable("id") Long id, MultipartFile[] fileList) throws IOException {
         //判断id是否存在
         AcademicPaperAudit findRecord = this.checkIdExistAndReturn(id);
         Long tid = findRecord.getTid();

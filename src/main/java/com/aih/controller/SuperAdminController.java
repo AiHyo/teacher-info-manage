@@ -94,6 +94,8 @@ public class SuperAdminController {
         InputStream inputStream = file.getInputStream();//字节输入流
         ExcelReader reader = ExcelUtil.getReader(inputStream);//通过输入流创建ExcelReader 对象
         reader.addHeaderAlias("手机号", "phone");
+        reader.addHeaderAlias("学院名称", "collegeName");
+        reader.addHeaderAlias("办公室名称", "officeName");
         // 读取
         List<TeacherExcelReader> readerList = reader.readAll(TeacherExcelReader.class);
         // 处理成需要插入的Teacher数据
@@ -103,6 +105,8 @@ public class SuperAdminController {
             teacher.setUsername(phone); //登录账号默认手机号
             teacher.setPassword(passwordEncoder.encode(defaultPassword));
             teacher.setPhone(obj.getPhone());
+            teacher.setCid(collegeService.getCidByName(obj.getCollegeName()));
+            teacher.setOid(officeService.getOidByName(obj.getOfficeName()));
             return teacher;
         }).collect(Collectors.toList());
         try {

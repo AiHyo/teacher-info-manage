@@ -36,6 +36,9 @@ public class AcademicPaperAudit implements Serializable {
     @ApiModelProperty("论文名称")
     private String title;
 
+    @ApiModelProperty("论文类型")
+    private String type;
+
     @ApiModelProperty("发表期刊")
     private String publishJournal;
 
@@ -81,9 +84,6 @@ public class AcademicPaperAudit implements Serializable {
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic
     private Integer deleted;
-
-    @ApiModelProperty("test1")
-    private String test1;
 
     @ApiModelProperty("test2")
     private String test2;

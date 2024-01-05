@@ -14,24 +14,17 @@ import com.baomidou.mybatisplus.extension.service.IService;
  * @since 2023-07-07
  */
 public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit> {
-
-    Page<AcademicPaperDto> queryRecordsByCid(Integer pageNum, Integer pageSize, Integer auditStatus, String title, Boolean onlyOwn);
-
-    Page<AcademicPaperDto> queryRecordsByOid(Integer pageNum, Integer pageSize, Integer auditStatus, String title, Boolean onlyOwn);
-
-
-    String deleteRecord(Long id);
-
-
-    AcademicPaperDto queryDtoById(Long id);
-
     void passAcademicPaperAudit(AcademicPaperAudit academicPaper);
 
     void rejectAcademicPaperAudit(AcademicPaperAudit academicPaper);
 
-    Page<AcademicPaperDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String title);
+    Page<AcademicPaperDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+
+    Page<AcademicPaperDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
 
     void deleteOwnInfo(Long id);
 
-    Page<AcademicPaperDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn);
+    String deleteRecord(Long id);
+
+    AcademicPaperDto queryDtoById(Long id);
 }

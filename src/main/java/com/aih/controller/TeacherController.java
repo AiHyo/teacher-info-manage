@@ -9,6 +9,7 @@ import com.aih.common.interceptor.AuthAccess;
 import com.aih.common.aop_log.LogAnnotation;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
+import com.aih.common.interceptor.AuthTokeAccess;
 import com.aih.entity.Role;
 import com.aih.entity.Teacher;
 import com.aih.entity.TeacherRole;
@@ -21,6 +22,7 @@ import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.aih.entity.vo.TeacherDetailDto;
 import com.aih.service.ITeacherService;
+import com.aih.utils.vo.RoleType;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.deepoove.poi.XWPFTemplate;
@@ -93,14 +95,29 @@ public class TeacherController {
     }
 
     /**
-     * 根据token显示教师自己的有效信息
+     * 通用接口,根据tid查询教师详细信息,如果不传tid则默认查询自己的信息. tid不存在/没权限会抛出对应错误信息
+     * @param tid
      */
-    @ApiOperation("显示教师自己的有效信息")
-    @GetMapping("showInfo")
-    public R<TeacherDetailDto> showInfo(){
-        Long uid = UserInfoContext.getUser().getId();
-        TeacherDetailDto teacherDetailDto = teacherService.queryTeacherDtoByTid(uid);
-        return R.success(teacherDetailDto);
+    @AuthTokeAccess // 通用,传入token放行
+    @ApiOperation("查看教师详细信息")
+    @GetMapping("getTeacherDetailInfo/")
+    public R<TeacherDetailDto> getTeacherDetailInfo(@RequestParam(value = "tid",required = false) Long tid){
+        log.info("tid:{}",tid);
+        if (tid==null) {
+            Long uid = UserInfoContext.getUser().getId();
+            tid = uid;
+        }
+        log.info("==============",tid);
+        Teacher findTeacher = teacherService.getById(tid);
+        if (findTeacher == null) {
+            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
+        }
+        RoleType roleType = UserInfoContext.getUser().getRoleType();
+        if ( (roleType == RoleType.AUDITOR && !findTeacher.getOid().equals(UserInfoContext.getUser().getOid()))
+            || (roleType == RoleType.ADMIN && !findTeacher.getCid().equals(UserInfoContext.getUser().getCid()))) {
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+        return R.success(teacherService.queryTeacherDtoByTid(tid));
     }
 
     /**
@@ -149,44 +166,45 @@ public class TeacherController {
         return R.success("修改教师基础信息成功");
     }
     // == role ==
-    @ApiOperation("查看所有的职务")
-    @GetMapping("/showRoleList")
-    public R<List<Role>> showRoleList(){
-        return R.success(roleMapper.selectList(null));
-    }
-    @ApiOperation("查看自己的职务")
-    @GetMapping("/showMyRoleList")
-    public R<List<Role>> showMyRoleList(){
-        Long tid = UserInfoContext.getUser().getId();
-        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
-        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Role::getId,rids);
-        return R.success(roleMapper.selectList(queryWrapper));
-    }
-    @ApiOperation("修改自己的职务")
-    @PutMapping("/updateRole")
-    public R<?> updateRole(@RequestParam("rids") List<Long> rids){
-        Long tid = UserInfoContext.getUser().getId();
-        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Role::getId,rids);
-        List<Role> roleList = roleMapper.selectList(queryWrapper);
-        if (roleList.size()!=rids.size()) {
-            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-        }
-        //删除tid的所有数据
-        teacherRoleMapper.deleteTeacherRoleByTid(tid);
-        //插入新的数据
-        for (Long rid : rids) {
-            teacherRoleMapper.insert(new TeacherRole(tid,rid));
-        }
-        return R.success("修改角色成功");
-    }
+//    @ApiOperation("查看所有的职务")
+//    @GetMapping("/showRoleList")
+//    public R<List<Role>> showRoleList(){
+//        return R.success(roleMapper.selectList(null));
+//    }
+
+//    @ApiOperation("查看自己的职务")
+//    @GetMapping("/showMyRoleList")
+//    public R<List<Role>> showMyRoleList(){
+//        Long tid = UserInfoContext.getUser().getId();
+//        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
+//        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.in(Role::getId,rids);
+//        return R.success(roleMapper.selectList(queryWrapper));
+//    }
+//    @ApiOperation("修改自己的职务")
+//    @PutMapping("/updateRole")
+//    public R<?> updateRole(@RequestParam("rids") List<Long> rids){
+//        Long tid = UserInfoContext.getUser().getId();
+//        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.in(Role::getId,rids);
+//        List<Role> roleList = roleMapper.selectList(queryWrapper);
+//        if (roleList.size()!=rids.size()) {
+//            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
+//        }
+//        //删除tid的所有数据
+//        teacherRoleMapper.deleteTeacherRoleByTid(tid);
+//        //插入新的数据
+//        for (Long rid : rids) {
+//            teacherRoleMapper.insert(new TeacherRole(tid,rid));
+//        }
+//        return R.success("修改角色成功");
+//    }
 
     /**
      * test接口 用于测试
      */
     @AuthAccess//放行
-    @ApiOperation("新增教师用户")
+    @ApiOperation("test新增教师用户")
     @PostMapping
     public R<?> save(@RequestBody Teacher teacher){
         teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));
@@ -200,70 +218,70 @@ public class TeacherController {
     /////////////////////////////////////////////审核员专场/////////////////////////////////////////////
     //////////// ============== 查教师 ================== //////////////
 
-    /**
-     * 审核员接口,查询管理教研室下所有的教师,不是审核员会抛出自定义异常,
-     * @param pageNum 页码
-     * @param pageSize 页大小
-     * @param teacherName 教师姓名
-     * @param gender 性别
-     * @param ethnic 民族
-     * @param birthplace 籍贯
-     * @param address 住址
-     */
-    @ApiOperation("[审核员]查询管理教研室下所有的教师")
-    @GetMapping("/getTeacherList")
-    public R<Page<TeacherDto>> getTeacherList(@RequestParam("pageNum") Integer pageNum,
-                                              @RequestParam("pageSize") Integer pageSize,
-                                              @RequestParam(value = "teacherName",required = false) String teacherName,
-                                              @RequestParam(value = "gender",required = false)Integer gender,
-                                              @RequestParam(value = "ethnic",required = false) String ethnic,
-                                              @RequestParam(value = "birthplace",required = false) String birthplace,
-                                              @RequestParam(value = "address",required = false) String address){
-        this.checkIsAuditor();//检查uid是否为审核员
-        return R.success(teacherService.getTeacherList(pageNum,pageSize,teacherName,gender,ethnic,birthplace,address));
-    }
+//    /**
+//     * 审核员接口,查询管理教研室下所有的教师,不是审核员会抛出自定义异常,
+//     * @param pageNum 页码
+//     * @param pageSize 页大小
+//     * @param teacherName 教师姓名
+//     * @param gender 性别
+//     * @param ethnic 民族
+//     * @param birthplace 籍贯
+//     * @param address 住址
+//     */
+//    @ApiOperation("[审核员]查询管理教研室下所有的教师")
+//    @GetMapping("/getTeacherList")
+//    public R<Page<TeacherDto>> getTeacherList(@RequestParam("pageNum") Integer pageNum,
+//                                              @RequestParam("pageSize") Integer pageSize,
+//                                              @RequestParam(value = "teacherName",required = false) String teacherName,
+//                                              @RequestParam(value = "gender",required = false)Integer gender,
+//                                              @RequestParam(value = "ethnic",required = false) String ethnic,
+//                                              @RequestParam(value = "birthplace",required = false) String birthplace,
+//                                              @RequestParam(value = "address",required = false) String address){
+//        this.checkIsAuditor();//检查uid是否为审核员
+//        return R.success(teacherService.getTeacherList(pageNum,pageSize,teacherName,gender,ethnic,birthplace,address));
+//    }
 
-    /**
-     * tid不存在/没权限会抛出异常
-     * @param tid 查询的教师id
-     */
-    @ApiOperation("[审核员]查看教师详细信息")
-    @GetMapping("/getTeacherInfo/{tid}")
-    public R<TeacherDetailDto> getTeacherInfo(@PathVariable Long tid) {
-        this.checkIsAuditor();//检查uid是否为审核员
-        Teacher findTeacher = teacherService.getById(tid);
-        if (findTeacher == null) {
-            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
-        }
-        if (!findTeacher.getOid().equals(UserInfoContext.getUser().getOid())) {
-            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
-        }
-        return R.success(teacherService.queryTeacherDtoByTid(tid));
-    }
+//    /**
+//     * tid不存在/没权限会抛出异常
+//     * @param tid 查询的教师id
+//     */
+//    @ApiOperation("[审核员]查看教师详细信息")
+//    @GetMapping("/getTeacherInfo/{tid}")
+//    public R<TeacherDetailDto> getTeacherInfo(@PathVariable Long tid) {
+//        this.checkIsAuditor();//检查uid是否为审核员
+//        Teacher findTeacher = teacherService.getById(tid);
+//        if (findTeacher == null) {
+//            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
+//        }
+//        if (!findTeacher.getOid().equals(UserInfoContext.getUser().getOid())) {
+//            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+//        }
+//        return R.success(teacherService.queryTeacherDtoByTid(tid));
+//    }
 
 
     //////////// ============== 查审核教师记录 ================== //////////////
-
-    /**
-     * 审核员接口,查询管理教研室下所有的教师审核记录。不是审核员/auditStatus不合法,会抛出自定义异常,
-     * @param pageNum  当前页码
-     * @param pageSize 每页大小
-     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
-     * @param onlyOwn 布尔类型(可选)只看自己的,默认false
-     * @return 每条数据包含：审核类型、审核对象id、审核状态、创建时间、审核时间、教师姓名、教研室名称、学院名称
-     */
-    @ApiOperation("[审核员][预览]查询管理教研室下所有的教师审核记录")
-    @GetMapping("/getAuditList")
-    public R<Page<AuditInfoDto>> getAuditList(@RequestParam(value = "pageNum") Integer pageNum,
-                                              @RequestParam(value = "pageSize") Integer pageSize,
-                                              @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
-                                              @RequestParam(value = "onlyOwn",required = false) boolean onlyOwn){
-        this.checkIsAuditor();//检查uid是否为审核员
-        if(auditStatus!=null){
-            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
-        }
-        return R.success(teacherService.getAuditList(pageNum,pageSize,auditStatus,onlyOwn));
-    }
+//
+//    /**
+//     * 审核员接口,查询管理教研室下所有的教师审核记录。不是审核员/auditStatus不合法,会抛出自定义异常,
+//     * @param pageNum  当前页码
+//     * @param pageSize 每页大小
+//     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
+//     * @param onlyOwn 布尔类型(可选)只看自己的,默认false
+//     * @return 每条数据包含：审核类型、审核对象id、审核状态、创建时间、审核时间、教师姓名、教研室名称、学院名称
+//     */
+//    @ApiOperation("[审核员][预览]查询管理教研室下所有的教师审核记录")
+//    @GetMapping("/getAuditList")
+//    public R<Page<AuditInfoDto>> getAuditList(@RequestParam(value = "pageNum") Integer pageNum,
+//                                              @RequestParam(value = "pageSize") Integer pageSize,
+//                                              @RequestParam(value = "auditStatus",required = false) Integer auditStatus,
+//                                              @RequestParam(value = "onlyOwn",required = false) boolean onlyOwn){
+//        this.checkIsAuditor();//检查uid是否为审核员
+//        if(auditStatus!=null){
+//            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
+//        }
+//        return R.success(teacherService.getAuditList(pageNum,pageSize,auditStatus,onlyOwn));
+//    }
 
 
 
@@ -390,9 +408,7 @@ public class TeacherController {
     }
 
     private void checkIsAuditor() { //检查uid是否为审核员
-        Long tid = UserInfoContext.getUser().getId();
-        Teacher findTeacher = teacherService.getById(tid);
-        if (findTeacher.getIsAuditor()==0) {
+        if (UserInfoContext.getUser().getRoleType()!= RoleType.AUDITOR) {
             throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_AUDITOR);
         }
     }

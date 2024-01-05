@@ -17,6 +17,7 @@ import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.deepoove.poi.XWPFTemplate;
 import io.swagger.annotations.ApiOperation;
@@ -137,6 +138,43 @@ public class AdminController {
     }
 
     /**
+     * 修改教师信息,如果[tid/oid]不存在/不属于自己学院,抛出自定义异常信息
+     * username,isAuditor,cid强制置空,不允许修改.password自动加密
+     * @param teacher
+     * @return
+     */
+    @ApiOperation("修改教师信息")
+    @PutMapping("/updateTeacher")
+    public R<?> updateTeacher(@RequestBody Teacher teacher){
+        //检验tid
+        this.checkTeacherIds(CollUtil.newArrayList(teacher.getId()));
+        if (StrUtil.isNotBlank(teacher.getPassword())) {
+            teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));
+        }
+        if (StrUtil.isNotBlank(teacher.getUsername())) {
+            teacher.setUsername(null);
+        }
+        if (teacher.getIsAuditor()!=null) {
+            teacher.setTeacherName(null);
+        }
+        if (teacher.getCid()!=null) {
+            teacher.setGender(null);
+        }
+        //如果有oid,检验oid
+        if (teacher.getOid()!=null) {
+            Office findOffice = officeMapper.selectById(teacher.getOid());
+            if (findOffice == null) {
+                throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_OFFICE);
+            }
+            if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
+                throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+            }
+        }
+        teacherService.updateById(teacher);
+        return R.success("修改成功");
+    }
+
+    /**
      * isAuditor/ids非法 抛出自定义信息。审核员权限改动了的教师,权限生效时间createDate会被更新成当前时间
      * @param ids 教师id列表
      * @param isAuditor 路径参数 0:设为非审核员  1:设为审核员
@@ -175,59 +213,59 @@ public class AdminController {
         return R.success(officeList);
     }*/
 
-    /**
-     * 可选模糊查询 keyword: 教研室/教师名称,其它都是对应教师属性的模糊查询
-     */
-    @ApiOperation("查询学院下的教师")
-    @GetMapping("/getTeacherList")
-    public R<Page<TeacherDto>> admin_GetTeacherList(@RequestParam("pageNum") Integer pageNum,
-                                                    @RequestParam("pageSize") Integer pageSize,
-                                                    @RequestParam(value = "keyword", required = false) String keyword,
-                                                    @RequestParam(value = "oid", required = false) Long oid,
-                                                    @RequestParam(value = "officeName", required = false) String officeName,
-                                                    @RequestParam(value = "teacherName", required = false) String teacherName,
-                                                    @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
-                                                    @RequestParam(value = "gender", required = false) Integer gender,
-                                                    @RequestParam(value = "ethnic", required = false) String ethnic,
-                                                    @RequestParam(value = "birthplace", required = false) String birthplace,
-                                                    @RequestParam(value = "address", required = false) String address) {
-        return R.success(adminService.getTeacherList(pageNum,pageSize, keyword, oid,officeName,teacherName,isAuditor, gender, ethnic, birthplace, address));
-    }
+//    /**
+//     * 可选模糊查询 keyword: 教研室/教师名称,其它都是对应教师属性的模糊查询
+//     */
+//    @ApiOperation("查询学院下的教师")
+//    @GetMapping("/getTeacherList")
+//    public R<Page<TeacherDto>> admin_GetTeacherList(@RequestParam("pageNum") Integer pageNum,
+//                                                    @RequestParam("pageSize") Integer pageSize,
+//                                                    @RequestParam(value = "keyword", required = false) String keyword,
+//                                                    @RequestParam(value = "oid", required = false) Long oid,
+//                                                    @RequestParam(value = "officeName", required = false) String officeName,
+//                                                    @RequestParam(value = "teacherName", required = false) String teacherName,
+//                                                    @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
+//                                                    @RequestParam(value = "gender", required = false) Integer gender,
+//                                                    @RequestParam(value = "ethnic", required = false) String ethnic,
+//                                                    @RequestParam(value = "birthplace", required = false) String birthplace,
+//                                                    @RequestParam(value = "address", required = false) String address) {
+//        return R.success(adminService.getTeacherList(pageNum,pageSize, keyword, oid,officeName,teacherName,isAuditor, gender, ethnic, birthplace, address));
+//    }
 
 
-    @ApiOperation("查看教师详细信息")
-    @GetMapping("/getTeacherInfo/{tid}")
-    public R<TeacherDetailDto> getTeacherInfo(@PathVariable Long tid) {
-        //判断权限
-        Teacher findTeacher = teacherService.getById(tid);
-        if (findTeacher == null) {
-            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
-        }
-        if (!findTeacher.getCid().equals(UserInfoContext.getUser().getCid())) {
-            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
-        }
-        return R.success(teacherService.queryTeacherDtoByTid(tid));
-    }
+//    @ApiOperation("查看教师详细信息")
+//    @GetMapping("/getTeacherInfo/{tid}")
+//    public R<TeacherDetailDto> getTeacherInfo(@PathVariable Long tid) {
+//        //判断权限
+//        Teacher findTeacher = teacherService.getById(tid);
+//        if (findTeacher == null) {
+//            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_TEACHER);
+//        }
+//        if (!findTeacher.getCid().equals(UserInfoContext.getUser().getCid())) {
+//            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+//        }
+//        return R.success(teacherService.queryTeacherDtoByTid(tid));
+//    }
 
-    /**
-     * 查询的是所有类型的信息,统一部分内容检验auditStatus是否合法,不合法抛出自定义信息
-     * @param pageNum  当前页码
-     * @param pageSize 每页大小
-     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
-     * @param onlyOwn 布尔类型(可选)只看自己的,默认false
-     * @return 每条数据包含：审核类型、审核对象id、审核状态、创建时间、审核时间、教师姓名、教研室名称、学院名称
-     */
-    @ApiOperation("[预览]查询管理学院下所有的审核员审核记录")
-    @GetMapping("/getAuditList")
-    public R<Page<AuditInfoDto>> getAuditList(@RequestParam("pageNum") Integer pageNum,
-                                              @RequestParam("pageSize") Integer pageSize,
-                                              @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
-                                              @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
-        if(auditStatus!=null){
-            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
-        }
-        return R.success(adminService.getAuditList(pageNum,pageSize, auditStatus,onlyOwn));
-    }
+//    /**
+//     * 查询的是所有类型的信息,统一部分内容检验auditStatus是否合法,不合法抛出自定义信息
+//     * @param pageNum  当前页码
+//     * @param pageSize 每页大小
+//     * @param auditStatus (可选)审核状态,只接受0/1/2,不传则查询所有
+//     * @param onlyOwn 布尔类型(可选)只看自己的,默认false
+//     * @return 每条数据包含：审核类型、审核对象id、审核状态、创建时间、审核时间、教师姓名、教研室名称、学院名称
+//     */
+//    @ApiOperation("[预览]查询管理学院下所有的审核员审核记录")
+//    @GetMapping("/getAuditList")
+//    public R<Page<AuditInfoDto>> getAuditList(@RequestParam("pageNum") Integer pageNum,
+//                                              @RequestParam("pageSize") Integer pageSize,
+//                                              @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+//                                              @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+//        if(auditStatus!=null){
+//            MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
+//        }
+//        return R.success(adminService.getAuditList(pageNum,pageSize, auditStatus,onlyOwn));
+//    }
 
     //根据ids删除教师
 /**
@@ -244,11 +282,11 @@ public class AdminController {
     }
 
     // ============================= role =============================
-    @ApiOperation("查看所有职务")
-    @GetMapping("/showRoleList")
-    public R<List<Role>> getAllRole() {
-        return R.success(roleMapper.selectList(null));
-    }
+//    @ApiOperation("查看所有职务")
+//    @GetMapping("/showRoleList")
+//    public R<List<Role>> getAllRole() {
+//        return R.success(roleMapper.selectList(null));
+//    }
 
     /**
      * @param roleName 新职务名
@@ -262,42 +300,44 @@ public class AdminController {
         return R.success("增加职务成功");
     }
 
-    /**
-     * 根据tid查看教师的职务。检验tid是否存在/有无权限。
-     * @param tid
-     * @return
-     */
-    @ApiOperation("查看教师的职务")
-    @GetMapping("/showTeacherRoleList/{tid}")
-    public R<List<Role>> showMyRoleList(@PathVariable Long tid){
-        this.checkTeacherIds(CollUtil.newArrayList(tid));//检验tid是否存在/有无权限
-        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
-        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Role::getId,rids);
-        return R.success(roleMapper.selectList(queryWrapper));
-    }
-    /** 根据tid和rids修改教师的职务。检验有无对tid的权限,rids是否都存在
-     * @param tid 教师id
-     * @param rids 职务id列表
-     */
-    @ApiOperation("修改教师的职务")
-    @PutMapping("/updateRole/{tid}")
-    public R<?> updateRole(@PathVariable Long tid,@RequestParam("rids") List<Long> rids){
-        this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
-        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Role::getId,rids);
-        List<Role> roleList = roleMapper.selectList(queryWrapper);
-        if (roleList.size()!=rids.size()) {
-            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-        }
-        //删除tid的所有数据
-        teacherRoleMapper.deleteTeacherRoleByTid(tid);
-        //插入新的数据
-        for (Long rid : rids) {
-            teacherRoleMapper.insert(new TeacherRole(tid,rid));
-        }
-        return R.success("修改角色成功");
-    }
+
+//    /**
+//     * 根据tid查看教师的职务。检验tid是否存在/有无权限。
+//     * @param tid
+//     * @return
+//     */
+//    @ApiOperation("查看教师的职务")
+//    @GetMapping("/showTeacherRoleList/{tid}")
+//    public R<List<Role>> showMyRoleList(@PathVariable Long tid){
+//        this.checkTeacherIds(CollUtil.newArrayList(tid));//检验tid是否存在/有无权限
+//        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
+//        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.in(Role::getId,rids);
+//        return R.success(roleMapper.selectList(queryWrapper));
+//    }
+
+//    /** 根据tid和rids修改教师的职务。检验有无对tid的权限,rids是否都存在
+//     * @param tid 教师id
+//     * @param rids 职务id列表
+//     */
+//    @ApiOperation("修改教师的职务")
+//    @PutMapping("/updateRole/{tid}")
+//    public R<?> updateRole(@PathVariable Long tid,@RequestParam("rids") List<Long> rids){
+//        this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
+//        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+//        queryWrapper.in(Role::getId,rids);
+//        List<Role> roleList = roleMapper.selectList(queryWrapper);
+//        if (roleList.size()!=rids.size()) {
+//            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
+//        }
+//        //删除tid的所有数据
+//        teacherRoleMapper.deleteTeacherRoleByTid(tid);
+//        //插入新的数据
+//        for (Long rid : rids) {
+//            teacherRoleMapper.insert(new TeacherRole(tid,rid));
+//        }
+//        return R.success("修改角色成功");
+//    }
 
     /**
      * @param id      职务id
@@ -309,7 +349,7 @@ public class AdminController {
         return R.success("删除职务成功");
     }
     // ============================= 办公室 =============================
-    @ApiOperation("查看学院下办公室")
+    @ApiOperation("查看自己学院下的办公室")
     @GetMapping("/getAllOffice")
     public R<Page<OfficeDto>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
                                               @RequestParam("pageSize") Integer pageSize,
@@ -379,14 +419,33 @@ public class AdminController {
         officeMapper.deleteById(id);
         return R.success("删除成功");
     }
-    // ================================ 申请教师换学院 ================================
-    @ApiOperation("查看所有学院")
-    @GetMapping("/getAllCollege")
-    public R<Page<College>> getAllCollege(@RequestParam("pageNum") Integer pageNum,
-                                          @RequestParam("pageSize") Integer pageSize){
-        Page<College> page = new Page<>(pageNum, pageSize);
-        return R.success(collegeService.page(page));
+    // =============================== 修改教师办公室 ===============================
+    /**
+     * 根据tid修改教师的办公室。检验tid是否存在/有无权限,oid是否存在/是自己学院下
+     * @param tid 教师id
+     * @param oid 办公室id
+     */
+    @ApiOperation("修改教师的办公室")
+    @PutMapping("/updateTeacherOffice/{tid}/{oid}")
+    public R<?> updateTeacherOffice(@PathVariable Long tid,@PathVariable Long oid){
+        //判断tid是否存在/有无权限
+        this.checkTeacherIds(CollUtil.newArrayList(tid));
+        //判断oid是否存在/有无权限
+        Office findOffice = officeMapper.selectById(oid);
+        if (findOffice == null) {
+            throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_OFFICE);
+        }
+        if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+        // 开始操作
+        LambdaUpdateWrapper<Teacher> updateWrapper = new LambdaUpdateWrapper<>();
+        updateWrapper.eq(Teacher::getId,tid);
+        updateWrapper.set(Teacher::getOid,oid);
+        teacherService.update(null,updateWrapper);
+        return R.success("修改成功");
     }
+    // ================================ 申请教师换学院 ================================
     //申请tid换学院到新的cid
     /**
      * 自动填充oldAid+oldCid+createTime+auditStatus。如果(tid不存在/不属于自己学院)/(newCid不存在/是自身学院)=>非法操作,抛出自定义异常信息。

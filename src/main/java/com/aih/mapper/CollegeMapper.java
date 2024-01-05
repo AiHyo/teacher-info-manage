@@ -18,4 +18,7 @@ import org.apache.ibatis.annotations.Select;
 public interface CollegeMapper extends BaseMapper<College> {
     @Select("select college_name from college where id = #{id} and deleted = 0")
     String getCollegeNameByCid(Long id);
+
+    @Select("select id from college where college_name = #{collegeName} and deleted = 0")
+    Long getCidByName(String collegeName);
 }

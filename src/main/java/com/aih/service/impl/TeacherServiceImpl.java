@@ -307,6 +307,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
                 writer.addHeaderAlias("ethnic", "民族");
                 count += 1;
             }
+            if (fieldList.contains("politicsStatus")) {
+                writer.addHeaderAlias("politicsStatus", "政治面貌");
+                count += 1;
+            }
             if (fieldList.contains("birthplace")) {
                 writer.addHeaderAlias("birthplace", "籍贯");
                 count += 1;
@@ -347,6 +351,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             writer.addHeaderAlias("identityCard", "身份证号");
             writer.addHeaderAlias("roleList", "职务");
             writer.addHeaderAlias("ethnic", "民族");
+            writer.addHeaderAlias("politicsStatus", "政治面貌");
             writer.addHeaderAlias("birthplace", "籍贯");
             writer.addHeaderAlias("address", "住址");
             writer.addHeaderAlias("phone", "电话号码");

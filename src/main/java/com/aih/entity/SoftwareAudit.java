@@ -35,6 +35,12 @@ public class SoftwareAudit implements Serializable {
     @ApiModelProperty("软件名称")
     private String softwareName;
 
+    @ApiModelProperty("软著阶段")
+    private String stage;
+
+    @ApiModelProperty("软著状态")
+    private Integer status;
+
     @ApiModelProperty("完成/发布日期")
     private LocalDate completionDate;
 
@@ -77,12 +83,6 @@ public class SoftwareAudit implements Serializable {
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic
     private Integer deleted;
-
-    @ApiModelProperty("test1")
-    private String test1;
-
-    @ApiModelProperty("test2")
-    private String test2;
 
     @ApiModelProperty("test3")
     private String test3;

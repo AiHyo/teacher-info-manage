@@ -19,6 +19,7 @@ public class TeacherExcelModel {
 //    private String identityCard;  //不在Teacher中
     private String roleList;//不在Teacher中
     private String ethnic;
+    private String politicsStatus;
     private String birthplace;
     private String address;
     private String phone;
@@ -36,6 +37,7 @@ public class TeacherExcelModel {
         this.gender = teacher.getGender() == 1?"男":"女";
         this.idNumber = teacher.getIdNumber();
         this.ethnic = teacher.getEthnic();
+        this.politicsStatus = teacher.getPoliticsStatus();
         this.birthplace = teacher.getNativePlace();
         this.address = teacher.getAddress();
         this.phone = teacher.getPhone();

@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * <p>
@@ -44,38 +45,52 @@ public class RoleController {
         return R.success(roleMapper.selectList(null));
     }
 
+    /**
+     * 根据tid查看教师的职务
+     * @param tid 教师id 不传则默认查看自己的(教师才可以操作)
+     * @return 教师的职务列表
+     */
+    @ApiOperation("[管理员/教师自己]查看教师的职务")
+    @GetMapping("/getRoleListByTid")
+    public R<List<Role>> showRoleListByTid(@RequestParam(value = "tid",required = false) Long tid){
+        if (tid==null) {//不传,则查看自己
+            if (UserInfoContext.getUser().getRoleType()!=RoleType.TEACHER) {
+                throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
+            }
+            tid= UserInfoContext.getUser().getId();
+        }else{ //传了,则管理员查教师
+            if (UserInfoContext.getUser().getRoleType()!=RoleType.ADMIN) {
+                throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
+            }
+            this.checkTeacherIds(CollUtil.newArrayList(tid));//检验tid是否存在/有无权限
+        }
+        // == 开始查询 ==
+        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
+        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.in(Role::getId,rids);
+        return R.success(roleMapper.selectList(queryWrapper));
+    }
+
 
     /** 根据tid和rids修改教师的职务。检验有无对tid的权限,rids是否都存在
      * @param tid 教师id 不传则默认修改自己的(教师才可以操作)
      * @param rids 职务id列表
-     * return 修改自己角色成功(不传tid)/修改教师角色成功(传tid)
      */
-    @ApiOperation("修改教师的职务")
+    @ApiOperation("[管理员][教师自己]修改教师的职务")
     @PutMapping({"/updateRole"})
     public R<?> updateRole(@RequestParam(value = "tid",required = false) Long tid, @RequestParam("rids") List<Long> rids){
         if (tid==null) {//不传,则修改自己
             if (UserInfoContext.getUser().getRoleType()!=RoleType.TEACHER) {
                 throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
             }
-            Long uid = UserInfoContext.getUser().getId();
-            LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-            queryWrapper.in(Role::getId,rids);
-            List<Role> roleList = roleMapper.selectList(queryWrapper);
-            if (roleList.size()!=rids.size()) {
-                throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
+            tid = UserInfoContext.getUser().getId();
+        } else { //传了,则管理员修改教师
+            if (UserInfoContext.getUser().getRoleType()!=RoleType.ADMIN) {
+                throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
             }
-            //删除tid的所有数据
-            teacherRoleMapper.deleteTeacherRoleByTid(uid);
-            //插入新的数据
-            for (Long rid : rids) {
-                teacherRoleMapper.insert(new TeacherRole(uid,rid));
-            }
-            return R.success("修改自己角色成功");
+            this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
         }
-        if (UserInfoContext.getUser().getRoleType()!=RoleType.ADMIN) {
-            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
-        }
-        this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
+        // == 开始修改 ==
         LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(Role::getId,rids);
         List<Role> roleList = roleMapper.selectList(queryWrapper);
@@ -88,7 +103,7 @@ public class RoleController {
         for (Long rid : rids) {
             teacherRoleMapper.insert(new TeacherRole(tid,rid));
         }
-        return R.success("修改教师角色成功");
+        return R.success("修改角色成功");
     }
 
     //==========================================封装方法=============================================

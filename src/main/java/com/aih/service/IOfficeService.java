@@ -18,4 +18,6 @@ public interface IOfficeService extends IService<Office> {
     Page<OfficeDto> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName);
 
     Page<OfficeDto> getAllOffice(Integer pageNum, Integer pageSize, String officeName);
+
+    Long getOidByName(String officeName);
 }

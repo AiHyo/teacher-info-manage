@@ -77,4 +77,9 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
         dtoPage.setRecords(collect);
         return dtoPage;
     }
+
+    @Override
+    public Long getOidByName(String officeName) {
+        return this.baseMapper.getOidByName(officeName);
+    }
 }

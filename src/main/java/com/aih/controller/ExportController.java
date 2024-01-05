@@ -55,20 +55,13 @@ public class ExportController {
 
 
     //==========================================excel======================================
-    /**
-     * @param ids       （可选）
-     * @param oids      （可选）教研室oids
-     * @param fileName  （可选）导出excel的名称,默认"教师信息表"
-     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
-     * @throws IOException
-     */
 
     /**
      * 管理员/审核员导出excel.
      * @param tids       （可选）
      * @param oids      （可选）教研室oids
      * @param fileName  （可选）导出excel的名称,默认"教师信息表"
-     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
+     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,politicsStatus,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
      * @throws IOException
      */
     @LogAnnotation(module = "管理员/审核员", operator = "Excel批量导出教师信息")
@@ -134,7 +127,7 @@ public class ExportController {
      * 可选参数限制导出内容,不选就默认所有
      * @param ids 教师id
      * @param oids 教研室id(管理员才生效)
-     * @param fieldList      同Excel：id,teacherName,username,gender,identityCard,roleList,ethnic,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
+     * @param fieldList      同Excel：id,teacherName,username,gender,identityCard,roleList,ethnic,politicsStatus,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
      * @param attachmentList 附件种类 (暂未定,先不填)
      */
     @ApiOperation("导出压缩包")

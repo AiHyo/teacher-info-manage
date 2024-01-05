@@ -1,9 +1,9 @@
 package com.aih.service;
 
 import com.aih.entity.EducationExperienceAudit;
+import com.aih.entity.vo.audit.EducationExperienceDto;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * <p>
@@ -15,9 +15,17 @@ import java.util.List;
  */
 public interface IEducationExperienceAuditService extends IService<EducationExperienceAudit> {
 
-    List<EducationExperienceAudit> queryByOid();
-    List<EducationExperienceAudit> queryByCidAndAuditStatus();
+    void passEducationExperienceAudit(EducationExperienceAudit academicPaper);
 
-    List<EducationExperienceAudit> queryByCid();
+    void rejectEducationExperienceAudit(EducationExperienceAudit academicPaper);
 
+    Page<EducationExperienceDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+
+    Page<EducationExperienceDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
+
+    void deleteOwnInfo(Long id);
+
+    String deleteRecord(Long id);
+
+    EducationExperienceDto queryDtoById(Long id);
 }

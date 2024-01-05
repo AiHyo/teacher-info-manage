@@ -73,6 +73,10 @@ public class Teacher implements Serializable {
     @ApiModelProperty("所属教研室id")
     private Long oid;
 
+    @Alias("政治面貌")
+    @ApiModelProperty("政治面貌")
+    private String politicsStatus;
+
     @ApiModelProperty("文化程度")
     private String educationDegree;
 
