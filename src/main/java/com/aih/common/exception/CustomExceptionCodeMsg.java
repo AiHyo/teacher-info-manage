@@ -28,6 +28,7 @@ public enum CustomExceptionCodeMsg {
     IDS_ILLEGAL(1017,"传入ids非法,不存在其中id,请你重新确认"),
     USER_IS_DISABLED(1018,"账号已经被禁用"),
     FILE_NOT_EXIST(1019,"文件不存在"),
+    TEMPLATE_FILE_NOT_EXIST(1019,"模板文件不存在，请联系管理员"),
     PATH_PARAM_ILLEGAL(1020,"路径参数非法"),
     NOT_FOUND_TEACHER(1021, "未找到教师"),
     MISSING_PARAMETER(1022,"缺少参数"),
@@ -65,7 +66,13 @@ public enum CustomExceptionCodeMsg {
     REQUEST_CHANGE_COLLEGE_ERROR_TID_IS_AUDITING(1081, "申请变更学院失败,该教师已经正在申请转学院"),
     NOT_FOUND_REQUEST_COLLEGE_CHANGE(1082, "未找到该申请记录"),
     AUDIT_ERROR_NOT_UNAUDIT(1083, "操作失败,该申请已经审核过了"),
-    ;
+    //账号已存在
+    PHONE_EXIST(1090,"该手机号已经存在"),
+    OFFICE_NAME_EXIST(1091, "该部门已存在"),
+    USERNAME_EXIST(1092, "该用户名已存在"),
+    COLLEGE_NAME_EXIST(1093, "该学院已存在"),
+    ROLE_NAME_EXIST(1094, "职务已存在"),
+    PHONE_FORMAT_ERROR(1095, "手机号格式错误"), PHONE_IS_EMPTY(1020, "手机号不能为空");
 
 
 

@@ -1,0 +1,200 @@
+package com.aih.controller;
+
+import cn.hutool.core.io.FileUtil;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.poi.excel.ExcelReader;
+import cn.hutool.poi.excel.ExcelUtil;
+import com.aih.common.exception.CustomException;
+import com.aih.common.exception.CustomExceptionCodeMsg;
+import com.aih.entity.Teacher;
+import com.aih.entity.vo.export.excel.TeacherExcelReaderByAdmin;
+import com.aih.entity.vo.export.excel.TeacherExcelReaderBySuperAdmin;
+import com.aih.service.ICollegeService;
+import com.aih.service.IOfficeService;
+import com.aih.service.ITeacherService;
+import com.aih.utils.UserInfoContext;
+import com.aih.utils.vo.R;
+import com.aih.utils.vo.RoleType;
+import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletResponse;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URLEncoder;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+@RestController
+@RequestMapping("/import")
+public class ImportController {
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+    @Autowired
+    private ICollegeService collegeService;
+    @Autowired
+    private IOfficeService officeService;
+    @Autowired
+    private ITeacherService teacherService;
+    @Value("${default-password}")
+    private String defaultPassword;
+
+    @Value("${file.template-file-excel-superadmin}")
+    String excelTemplateFileSuperAdmin;
+    @Value("${file.template-file-excel-admin}")
+    String excelTemplateFileAdmin;
+    @Value("${excel.import-template-name}")
+    String importTemplateName;
+    //下载导入教师账号模板文件
+
+    /**
+     * [超管/管理员]下载导入教师账号模板文件 如果文件不存在,返回自定义信息。
+     */
+    @ApiOperation("下载导入所需文件模板")
+    @GetMapping("/downloadExcelTemplate")
+    public R<?> downloadExcelTemplate(HttpServletResponse response) throws IOException {
+        RoleType roleType = UserInfoContext.getUser().getRoleType();
+        if (roleType != RoleType.SUPER_ADMIN && roleType != RoleType.ADMIN){
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+        File file = null;
+        if (roleType == RoleType.SUPER_ADMIN) {
+            if (FileUtil.exist(excelTemplateFileSuperAdmin)) {
+                file = new File(excelTemplateFileSuperAdmin);
+            }
+        }else {
+            if (FileUtil.exist(excelTemplateFileAdmin)){
+                file = new File(excelTemplateFileAdmin);
+            }
+        }
+        if (file == null){
+            throw new CustomException(CustomExceptionCodeMsg.TEMPLATE_FILE_NOT_EXIST);
+        }
+        //对文件名编码,解决中文文件名乱码问题
+        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(importTemplateName, "UTF-8") + ".xlsx");  // 下载
+        //response.addHeader("Content-Disposition", "inline;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 预览
+        byte[] bytes = FileUtil.readBytes(file);
+        ServletOutputStream outputStream = response.getOutputStream();
+        outputStream.write(bytes);
+        outputStream.flush();
+        outputStream.close();
+        return R.success("下载成功");
+    }
+
+    /**
+     * [超管/管理员]Excel批量导入教师信息.超管若不填写办公室名称,则默认id0的办公室,若手机号已存在,若学院/办公室不存在,返回对应不存在的信息.管理员填写学院无效。
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    @ApiOperation("Excel批量导入教师信息")
+    @PostMapping("/excel")
+    @Transactional(rollbackFor=Exception.class) //事务回滚
+    public R<?> importExcel(MultipartFile file) throws IOException {
+        RoleType roleType = UserInfoContext.getUser().getRoleType();
+        if (roleType != RoleType.SUPER_ADMIN && roleType != RoleType.ADMIN){
+            throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+        }
+        InputStream inputStream = file.getInputStream();//字节输入流
+        ExcelReader reader = ExcelUtil.getReader(inputStream);//通过输入流创建ExcelReader 对象
+        reader.addHeaderAlias("手机号", "phone");
+        if (roleType==RoleType.SUPER_ADMIN) {
+            reader.addHeaderAlias("学院名称", "collegeName");
+        }
+        reader.addHeaderAlias("办公室名称", "officeName");
+        // 读取
+        List<Teacher> teacherList = null;
+        Map<String,Integer> college_map = new HashMap<>();
+        Map<String,Integer> office_map = new HashMap<>();
+        if (roleType==RoleType.SUPER_ADMIN) {
+            List<TeacherExcelReaderBySuperAdmin> readerList = reader.readAll(TeacherExcelReaderBySuperAdmin.class);
+            // 处理成需要插入的Teacher数据
+            teacherList = readerList.stream().map(obj -> {
+                String phone = obj.getPhone();
+                if (teacherService.checkUsernameExist(phone)) {
+                    throw new CustomException(1090,"手机号"+phone+"已经存在");
+                }
+                Teacher teacher = new Teacher();
+                teacher.setUsername(phone); //登录账号默认手机号
+                teacher.setPassword(passwordEncoder.encode(defaultPassword));
+                teacher.setPhone(obj.getPhone());
+                teacher.setIsAuditor(0); //插入的数据都默认0
+                String collegeName = obj.getCollegeName();
+                if (StrUtil.isBlank(collegeName)){
+                    throw new CustomException(1091,"手机号"+phone+"的学院名称不能为空");
+                }
+                Long cid = collegeService.getCidByName(collegeName);
+                if (cid ==null){
+                    throw new CustomException(1092,"学院名称"+collegeName+"不存在");
+                }
+                teacher.setCid(cid);
+                String officeName = obj.getOfficeName();
+                if (StrUtil.isBlank(officeName)){
+                    officeName = officeService.getOfficeNameByOid(0L);
+                }
+                Long oid = officeService.getOidByName(officeName);
+                if (oid ==null){
+                    throw new CustomException(1093,"办公室名称"+officeName+"不存在");
+                }
+                teacher.setOid(oid);
+                //计数
+                college_map.put(collegeName,college_map.getOrDefault(collegeName,0)+1);
+                office_map.put(officeName,office_map.getOrDefault(officeName,0)+1);
+                return teacher;
+            }).collect(Collectors.toList());
+        }
+        else { //管理员插入的教师数据都是自己学院的
+            Long cid = UserInfoContext.getUser().getCid();
+            if (cid == 0){
+                throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
+            }
+            String collegeName = collegeService.getCollegeNameByCid(cid);
+            List<TeacherExcelReaderByAdmin> readerList = reader.readAll(TeacherExcelReaderByAdmin.class);
+            teacherList = readerList.stream().map(obj -> {
+                String phone = obj.getPhone();
+                if (teacherService.checkUsernameExist(phone)) {
+                    throw new CustomException(1090,"手机号"+phone+"已经存在");
+                }
+                Teacher teacher = new Teacher();
+                teacher.setUsername(phone); //登录账号默认手机号
+                teacher.setPassword(passwordEncoder.encode(defaultPassword));
+                teacher.setPhone(obj.getPhone());
+                teacher.setIsAuditor(0); //插入的数据都默认0
+                String officeName = obj.getOfficeName();
+                teacher.setCid(collegeService.getCidByName(collegeName));
+                Long oid = officeService.getOidByName(officeName);
+                if (oid == null){
+                    throw new CustomException(1093,"办公室名称"+officeName+"不存在");
+                }
+                teacher.setOid(oid);
+                //计数
+                college_map.put(collegeName,college_map.getOrDefault(collegeName,0)+1);
+                office_map.put(officeName,office_map.getOrDefault(officeName,0)+1);
+                return teacher;
+            }).collect(Collectors.toList());
+        }
+        try {
+            teacherService.saveBatch(teacherList);
+        } catch (Exception e) {
+            e.printStackTrace();
+            throw new CustomException(CustomExceptionCodeMsg.EXCEL_IMPORT_ERROR);
+        }
+//        List<Map<String, Integer>> res = new ArrayList<>();
+        Map<String, Object> res = new HashMap<>();
+        res.put("college",college_map);
+        res.put("office",office_map);
+        return R.success(res);
+    }
+}

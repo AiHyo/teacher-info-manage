@@ -2,9 +2,10 @@ package com.aih.controller;
 
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
-import com.aih.entity.vo.TeacherDto;
-import com.aih.entity.vo.audit.AuditInfoDto;
+import com.aih.entity.vo.TeacherVo;
+import com.aih.entity.vo.auditvo.AuditInfoVo;
 import com.aih.service.IAdminService;
+import com.aih.service.ISuperAdminService;
 import com.aih.service.ITeacherService;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
@@ -25,6 +26,8 @@ public class PreviewController {
     private IAdminService adminService;
     @Autowired
     private ITeacherService teacherService;
+    @Autowired
+    private ISuperAdminService superAdminService;
     /**
      * 查询的是所有类型的信息,统一部分内容检验auditStatus是否合法,不合法抛出自定义信息
      * @param pageNum  当前页码
@@ -35,10 +38,10 @@ public class PreviewController {
      */
     @ApiOperation("[管理员/审核员][预览]查询管理学院下所有的审核员审核记录")
     @GetMapping("/getAuditList")
-    public R<Page<AuditInfoDto>> getAuditList(@RequestParam("pageNum") Integer pageNum,
-                                              @RequestParam("pageSize") Integer pageSize,
-                                              @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
-                                              @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+    public R<Page<AuditInfoVo>> getAuditList(@RequestParam("pageNum") Integer pageNum,
+                                             @RequestParam("pageSize") Integer pageSize,
+                                             @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+                                             @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
         RoleType roleType = UserInfoContext.getUser().getRoleType();
         if (roleType != RoleType.ADMIN && roleType != RoleType.AUDITOR) {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
@@ -54,10 +57,11 @@ public class PreviewController {
     }
 
     /**
-     * 可选模糊查询 keyword: 教研室/教师名称,其它都是对应教师属性的模糊查询.其中isAuditor/officeName/oid/keyword只有管理员传参才生效
+     * 可选模糊查询 keyword: 教研室/教师名称,其它都是对应教师属性的模糊查询。isAuditor/officeName/oid/keyword只有管理员传参有效。超管只可传cid。
      * @param pageNum 当前页码
      * @param pageSize 每页大小
      * @param keyword 教研室/教师名称
+     * @param cid 学院id
      * @param oid 办公室id
      * @param officeName 教研室名称
      * @param teacherName 教师名称
@@ -68,27 +72,30 @@ public class PreviewController {
      * @param address 住址
      * @return
      */
-    @ApiOperation("[管理员/审核员]查询权限下的教师")
+    @ApiOperation("[超管/管理员/审核员]查询权限下的教师")
     @GetMapping("/getTeacherList")
-    public R<Page<TeacherDto>> admin_GetTeacherList(@RequestParam("pageNum") Integer pageNum,
-                                                    @RequestParam("pageSize") Integer pageSize,
-                                                    @RequestParam(value = "keyword", required = false) String keyword,
-                                                    @RequestParam(value = "oid", required = false) Long oid,
-                                                    @RequestParam(value = "officeName", required = false) String officeName,
-                                                    @RequestParam(value = "teacherName", required = false) String teacherName,
-                                                    @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
-                                                    @RequestParam(value = "gender", required = false) Integer gender,
-                                                    @RequestParam(value = "ethnic", required = false) String ethnic,
-                                                    @RequestParam(value = "birthplace", required = false) String birthplace,
-                                                    @RequestParam(value = "address", required = false) String address) {
+    public R<Page<TeacherVo>> admin_GetTeacherList(@RequestParam("pageNum") Integer pageNum,
+                                                   @RequestParam("pageSize") Integer pageSize,
+                                                   @RequestParam(value = "keyword", required = false) String keyword,
+                                                   @RequestParam(value = "cid", required = false) Long cid,
+                                                   @RequestParam(value = "oid", required = false) Long oid,
+                                                   @RequestParam(value = "officeName", required = false) String officeName,
+                                                   @RequestParam(value = "teacherName", required = false) String teacherName,
+                                                   @RequestParam(value = "isAuditor", required = false) Integer isAuditor,
+                                                   @RequestParam(value = "gender", required = false) Integer gender,
+                                                   @RequestParam(value = "ethnic", required = false) String ethnic,
+                                                   @RequestParam(value = "birthplace", required = false) String birthplace,
+                                                   @RequestParam(value = "address", required = false) String address) {
         RoleType roleType = UserInfoContext.getUser().getRoleType();
-        if (roleType != RoleType.ADMIN && roleType != RoleType.AUDITOR) {
+        if (roleType == RoleType.TEACHER) {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
         }
         if (roleType == RoleType.ADMIN) {
             return R.success(adminService.getTeacherList(pageNum, pageSize, keyword, oid, officeName, teacherName, isAuditor, gender, ethnic, birthplace, address));
-        }//else AUDITOR
-        return R.success(teacherService.getTeacherList(pageNum, pageSize, teacherName, gender, ethnic, birthplace, address));
+        } else if (roleType == RoleType.AUDITOR) {
+            return R.success(teacherService.getTeacherList(pageNum, pageSize, teacherName, gender, ethnic, birthplace, address));
+        }
+        return R.success(superAdminService.getTeacherList(pageNum,pageSize,cid));
     }
 
 }

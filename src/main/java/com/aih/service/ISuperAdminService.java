@@ -1,6 +1,8 @@
 package com.aih.service;
 
 import com.aih.entity.SuperAdmin;
+import com.aih.entity.vo.TeacherVo;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;
@@ -29,4 +31,6 @@ public interface ISuperAdminService extends IService<SuperAdmin> {
     void updateAdminsCid(Long cid, List<Long> ids);
 
     void resetPassword(List<Long> ids, String password);
+
+    Page<TeacherVo> getTeacherList(Integer pageNum, Integer pageSize, Long cid);
 }

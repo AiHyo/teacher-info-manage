@@ -2,8 +2,9 @@ package com.aih.service.impl;
 
 import com.aih.entity.Admin;
 import com.aih.entity.SuperAdmin;
-import com.aih.mapper.AdminMapper;
-import com.aih.mapper.SuperAdminMapper;
+import com.aih.entity.Teacher;
+import com.aih.entity.vo.TeacherVo;
+import com.aih.mapper.*;
 import com.aih.service.ISuperAdminService;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
@@ -11,8 +12,10 @@ import com.aih.utils.UserInfoContext;
 import com.aih.utils.jwt.JwtUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -42,6 +45,12 @@ public class SuperAdminServiceImpl extends ServiceImpl<SuperAdminMapper, SuperAd
     private JwtUtil jwtUtil;
     @Autowired
     private AdminMapper adminMapper;
+    @Autowired
+    private TeacherMapper teacherMapper;
+    @Autowired
+    private OfficeMapper officeMapper;
+    @Autowired
+    private CollegeMapper collegeMapper;
 
     @Override
     public Map<String, Object> login(SuperAdmin superAdmin) {
@@ -59,6 +68,7 @@ public class SuperAdminServiceImpl extends ServiceImpl<SuperAdminMapper, SuperAd
             //返回数据
             HashMap<String, Object> data = new HashMap<>();
             data.put("token",token);
+            data.put("superadminName",loginSuperAdmin.getSuperadminName());
             return data;
         }
         throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
@@ -106,6 +116,27 @@ public class SuperAdminServiceImpl extends ServiceImpl<SuperAdminMapper, SuperAd
         updateWrapper.in(true,Admin::getId,ids)
                 .set(Admin::getPassword, passwordEncoder.encode(password));
         adminMapper.update(null,updateWrapper);
+    }
+
+    @Override
+    public Page<TeacherVo> getTeacherList(Integer pageNum, Integer pageSize, Long cid) {
+        Page<Teacher> page = new Page<>(pageNum,pageSize);
+        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(cid!=null,Teacher::getCid,cid);
+        teacherMapper.selectPage(page,queryWrapper);
+        List<TeacherVo> collect = page.getRecords().stream().map((item) -> {
+            TeacherVo teacherDto = new TeacherVo();
+            BeanUtils.copyProperties(item, teacherDto);//复制item给TeacherDto
+            teacherDto.setOfficeName(officeMapper.getOfficeNameByOid(item.getOid()));
+            teacherDto.setCollegeName(collegeMapper.getCollegeNameByCid(item.getCid()));
+            List<String> roleNameByTeacherId = teacherMapper.getRoleNameByTeacherId(item.getId());
+            teacherDto.setRoleList(String.join(",", roleNameByTeacherId));
+            return teacherDto;
+        }).collect(Collectors.toList());
+        Page<TeacherVo> dtoPage = new Page<>(pageNum, pageSize);
+        BeanUtils.copyProperties(page,dtoPage,"records");
+        dtoPage.setRecords(collect);
+        return dtoPage;
     }
 
     @Override

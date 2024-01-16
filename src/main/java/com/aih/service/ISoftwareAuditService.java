@@ -1,12 +1,9 @@
 package com.aih.service;
 
-import com.aih.entity.SoftwareAudit;
-import com.aih.entity.SoftwareAudit;
-import com.aih.entity.vo.audit.SoftwareDto;
+import com.aih.entity.audit.SoftwareAudit;
+import com.aih.entity.vo.auditvo.SoftwareVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * <p>
@@ -21,13 +18,15 @@ public interface ISoftwareAuditService extends IService<SoftwareAudit> {
 
     void rejectSoftwareAudit(SoftwareAudit academicPaper);
 
-    Page<SoftwareDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+    Page<SoftwareVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
 
-    Page<SoftwareDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
+    Page<SoftwareVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
 
     void deleteOwnInfo(Long id);
 
     String deleteRecord(Long id);
 
-    SoftwareDto queryDtoById(Long id);
+    SoftwareVo queryDtoById(Long id);
+
+    SoftwareVo getDto(SoftwareAudit softwareAudit);
 }

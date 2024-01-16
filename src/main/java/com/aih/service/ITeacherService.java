@@ -1,17 +1,17 @@
 package com.aih.service;
 
 import cn.hutool.poi.excel.ExcelWriter;
-import com.aih.entity.IdentityCardAudit;
 import com.aih.entity.Teacher;
-import com.aih.entity.vo.audit.AuditInfoDto;
-import com.aih.entity.vo.TeacherDetailDto;
-import com.aih.entity.vo.TeacherDto;
+import com.aih.entity.vo.auditvo.AuditInfoVo;
+import com.aih.entity.vo.TeacherDetailVo;
+import com.aih.entity.vo.TeacherVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.deepoove.poi.XWPFTemplate;
 
 import java.io.File;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -27,17 +27,15 @@ public interface ITeacherService extends IService<Teacher> {
 
     Map<String,Object> login(Teacher teacher);
 
-    TeacherDetailDto queryTeacherDtoByTid(Long uid);
+    TeacherDetailVo queryTeacherDetailDtoByTid(Long uid);
 
     void logout();
 
-    Page<TeacherDto> getTeacherList(Integer pageNum, Integer pageSize, String teacherName, Integer gender, String ethnic, String birthplace, String address);
-
-    IdentityCardAudit queryIdentityCardShowByTid(Long id);
+    Page<TeacherVo> getTeacherList(Integer pageNum, Integer pageSize, String teacherName, Integer gender, String ethnic, String birthplace, String address);
 
     List<String> getRoleListByTid(Long id);
 
-    XWPFTemplate getWordRender(Teacher teacher) throws IOException;
+    XWPFTemplate getWordRenderByTid(Long teacher) throws IOException;
 
     ExcelWriter getMyExcelWriter(List<Teacher> teacherList, String fileName, List<String> fieldList);
 
@@ -47,5 +45,11 @@ public interface ITeacherService extends IService<Teacher> {
 
     File getTeacherAttachmentFolder(List<Teacher> teacherList, List<String> attachmentList);
 
-    Page<AuditInfoDto> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn);
+    Page<AuditInfoVo> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn);
+
+    List<AuditInfoVo> getAllAuditInfoDtoList(List<Long> auditorCanAuditTids, Integer auditStatus, boolean onlyOwn, Long uid, LocalDate createDate);
+
+    List<Map<String, Object>> getTeacherCountByCollege();
+
+    boolean checkUsernameExist(String username);
 }

@@ -3,7 +3,8 @@ package com.aih.service.impl;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.WorkExperienceDto;
+import com.aih.entity.audit.WorkExperienceAudit;
+import com.aih.entity.vo.auditvo.WorkExperienceVo;
 import com.aih.mapper.*;
 import com.aih.service.IWorkExperienceAuditService;
 import com.aih.utils.MyUtil;
@@ -50,7 +51,7 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
 
 
     @Override
-    public WorkExperienceDto queryDtoById(Long id) {
+    public WorkExperienceVo queryDtoById(Long id) {
         WorkExperienceAudit findData = this.baseMapper.selectById(id);
         if (findData == null){
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
@@ -60,7 +61,7 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
         if (!powerIds.contains(UserInfoContext.getUser().getId())){
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
-        WorkExperienceDto dto = this.getDto(findData);
+        WorkExperienceVo dto = this.getDto(findData);
         return dto;
     }
 
@@ -78,9 +79,9 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
     }
 
     @Override
-    public Page<WorkExperienceDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
+    public Page<WorkExperienceVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
         Page<WorkExperienceAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<WorkExperienceDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<WorkExperienceVo> dtoPageInfo = new Page<>(pageNum, pageSize);
 
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<WorkExperienceAudit> queryWrapper = Wrappers.lambdaQuery();
@@ -89,15 +90,13 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
                 .like((StringUtils.isNotBlank(keyword)), WorkExperienceAudit::getCompanyName, keyword)//模糊查询
                 .orderByAsc(auditStatus==null, WorkExperienceAudit::getAuditStatus)//先按审核状态升序 未审核=>通过=>未通过
                 .orderByDesc(WorkExperienceAudit::getCreateTime);//再按创建时间倒序
-        if (auditStatus != null && auditStatus != 0){
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(WorkExperienceAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(WorkExperienceAudit::getDeleteRoles));
-        }
+        queryWrapper.and(wrapper -> wrapper
+                .notLike(WorkExperienceAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(WorkExperienceAudit::getDeleteRoles));
         this.baseMapper.selectPage(pageInfo,queryWrapper);
         //遍历每一条records(当前页下的所有数据)
-        List<WorkExperienceDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            WorkExperienceDto dto = this.getDto(item);
+        List<WorkExperienceVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            WorkExperienceVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
         BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
@@ -106,9 +105,9 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
     }
 
     @Override
-    public Page<WorkExperienceDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
+    public Page<WorkExperienceVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
         Page<WorkExperienceAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<WorkExperienceDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<WorkExperienceVo> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
         List<Long> queryTids = null;
         if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
@@ -130,17 +129,15 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
                 .orderByAsc(auditStatus==null, WorkExperienceAudit::getAuditStatus)
                 .orderByDesc(WorkExperienceAudit::getCreateTime);//审核状态相同的则按创建时间越晚的显示在最前
         // 删除过记录的情况：需要判断删除角色
-        if (auditStatus != null && auditStatus != 0){
-            Long uid = UserInfoContext.getUser().getId();
-            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
-                    .notLike(WorkExperienceAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(WorkExperienceAudit::getDeleteRoles));
-        }
-//        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
+        Long uid = UserInfoContext.getUser().getId();
+        queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                .notLike(WorkExperienceAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(WorkExperienceAudit::getDeleteRoles));
+        //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
         this.baseMapper.selectPage(pageInfo, queryWrapper); //
         //遍历每一条records(当前页下的所有数据)
-        List<WorkExperienceDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            WorkExperienceDto dto = this.getDto(item);
+        List<WorkExperienceVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            WorkExperienceVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
 
@@ -213,8 +210,9 @@ public class WorkExperienceAuditServiceImpl extends ServiceImpl<WorkExperienceAu
     }
 
     //Dto转换
-    private WorkExperienceDto getDto(WorkExperienceAudit project){
-        WorkExperienceDto dto = new WorkExperienceDto();
+    @Override
+    public WorkExperienceVo getDto(WorkExperienceAudit project){
+        WorkExperienceVo dto = new WorkExperienceVo();
         BeanUtils.copyProperties(project, dto);//将projectAudit的属性拷贝到dto中
         Long tid = project.getTid(); //获取tid,找到对应教师
         Long aid = project.getAid(); //获取aid,找到对应审核者id

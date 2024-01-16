@@ -10,6 +10,7 @@ import com.aih.mapper.AdminMapper;
 import com.aih.mapper.CollegeMapper;
 import com.aih.mapper.OfficeMapper;
 import com.aih.mapper.TeacherMapper;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -142,6 +143,16 @@ public class MyUtil {
     public static void checkAuditStatus(Integer auditStatus){
         if (auditStatus != 0 && auditStatus != 1 && auditStatus != 2){
             throw new CustomException(CustomExceptionCodeMsg.AUDIT_STATUS_ILLEGAL);
+        }
+    }
+
+    //检验手机号格式是否正确
+    public static void checkPhone(String phone){
+        if(StringUtils.isBlank(phone)){
+            throw new CustomException(CustomExceptionCodeMsg.PHONE_IS_EMPTY);
+        }
+        if (!phone.matches("^1[3-9]\\d{9}$")){
+            throw new CustomException(CustomExceptionCodeMsg.PHONE_FORMAT_ERROR);
         }
     }
 

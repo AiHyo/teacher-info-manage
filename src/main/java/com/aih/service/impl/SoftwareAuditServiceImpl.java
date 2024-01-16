@@ -3,7 +3,8 @@ package com.aih.service.impl;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.SoftwareDto;
+import com.aih.entity.audit.SoftwareAudit;
+import com.aih.entity.vo.auditvo.SoftwareVo;
 import com.aih.mapper.*;
 import com.aih.service.ISoftwareAuditService;
 import com.aih.utils.MyUtil;
@@ -50,7 +51,7 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
 
 
     @Override
-    public SoftwareDto queryDtoById(Long id) {
+    public SoftwareVo queryDtoById(Long id) {
         SoftwareAudit findData = this.baseMapper.selectById(id);
         if (findData == null){
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
@@ -60,7 +61,7 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
         if (!powerIds.contains(UserInfoContext.getUser().getId())){
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
-        SoftwareDto dto = this.getDto(findData);
+        SoftwareVo dto = this.getDto(findData);
         return dto;
     }
 
@@ -78,9 +79,9 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
     }
 
     @Override
-    public Page<SoftwareDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
+    public Page<SoftwareVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
         Page<SoftwareAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<SoftwareDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<SoftwareVo> dtoPageInfo = new Page<>(pageNum, pageSize);
 
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<SoftwareAudit> queryWrapper = Wrappers.lambdaQuery();
@@ -89,15 +90,13 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
                 .like((StringUtils.isNotBlank(keyword)), SoftwareAudit::getSoftwareName, keyword)//模糊查询
                 .orderByAsc(auditStatus==null, SoftwareAudit::getAuditStatus)//先按审核状态升序 未审核=>通过=>未通过
                 .orderByDesc(SoftwareAudit::getCreateTime);//再按创建时间倒序
-        if (auditStatus != null && auditStatus != 0){
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(SoftwareAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(SoftwareAudit::getDeleteRoles));
-        }
+        queryWrapper.and(wrapper -> wrapper
+                .notLike(SoftwareAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(SoftwareAudit::getDeleteRoles));
         this.baseMapper.selectPage(pageInfo,queryWrapper);
         //遍历每一条records(当前页下的所有数据)
-        List<SoftwareDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            SoftwareDto dto = this.getDto(item);
+        List<SoftwareVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            SoftwareVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
         BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
@@ -106,9 +105,9 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
     }
 
     @Override
-    public Page<SoftwareDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
+    public Page<SoftwareVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
         Page<SoftwareAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<SoftwareDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<SoftwareVo> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
         List<Long> queryTids = null;
         if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
@@ -130,17 +129,15 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
                 .orderByAsc(auditStatus==null, SoftwareAudit::getAuditStatus)
                 .orderByDesc(SoftwareAudit::getCreateTime);//审核状态相同的则按创建时间越晚的显示在最前
         // 删除过记录的情况：需要判断删除角色
-        if (auditStatus != null && auditStatus != 0){
-            Long uid = UserInfoContext.getUser().getId();
-            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
-                    .notLike(SoftwareAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(SoftwareAudit::getDeleteRoles));
-        }
-//        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
+        Long uid = UserInfoContext.getUser().getId();
+        queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                .notLike(SoftwareAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(SoftwareAudit::getDeleteRoles));
+        //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
         this.baseMapper.selectPage(pageInfo, queryWrapper); //
         //遍历每一条records(当前页下的所有数据)
-        List<SoftwareDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            SoftwareDto dto = this.getDto(item);
+        List<SoftwareVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            SoftwareVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
 
@@ -213,8 +210,9 @@ public class SoftwareAuditServiceImpl extends ServiceImpl<SoftwareAuditMapper, S
     }
 
     //Dto转换
-    private SoftwareDto getDto(SoftwareAudit project){
-        SoftwareDto dto = new SoftwareDto();
+    @Override
+    public SoftwareVo getDto(SoftwareAudit project){
+        SoftwareVo dto = new SoftwareVo();
         BeanUtils.copyProperties(project, dto);//将projectAudit的属性拷贝到dto中
         Long tid = project.getTid(); //获取tid,找到对应教师
         Long aid = project.getAid(); //获取aid,找到对应审核者id

@@ -1,6 +1,6 @@
 package com.aih.mapper;
 
-import com.aih.entity.TopicAudit;
+import com.aih.entity.audit.TopicAudit;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 /**

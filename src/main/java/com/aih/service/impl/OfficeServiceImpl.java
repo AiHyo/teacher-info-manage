@@ -3,7 +3,7 @@ package com.aih.service.impl;
 import cn.hutool.core.util.StrUtil;
 import com.aih.entity.College;
 import com.aih.entity.Office;
-import com.aih.entity.vo.OfficeDto;
+import com.aih.entity.vo.OfficeVo;
 import com.aih.mapper.CollegeMapper;
 import com.aih.mapper.OfficeMapper;
 import com.aih.service.IOfficeService;
@@ -31,7 +31,7 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
     @Autowired
     private CollegeMapper collegeMapper;
     @Override
-    public Page<OfficeDto> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName) {
+    public Page<OfficeVo> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName) {
         Long cid = UserInfoContext.getUser().getCid();
         Page<Office> pageInfo = new Page<>(pageNum,pageSize);
         LambdaQueryWrapper<Office> queryWrapper = new LambdaQueryWrapper<>();
@@ -40,8 +40,8 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
         queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
         this.baseMapper.selectPage(pageInfo, queryWrapper);
         //Dto处理
-        List<OfficeDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            OfficeDto dto = new OfficeDto();
+        List<OfficeVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            OfficeVo dto = new OfficeVo();
             BeanUtils.copyProperties(item, dto);
             College college = collegeMapper.selectById(item.getCid());
             if (college != null) {
@@ -49,22 +49,22 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
             }
             return dto;
         }).collect(Collectors.toList());
-        Page<OfficeDto> dtoPage = new Page<>(pageNum,pageSize);
+        Page<OfficeVo> dtoPage = new Page<>(pageNum,pageSize);
         BeanUtils.copyProperties(pageInfo,dtoPage,"records");
         dtoPage.setRecords(collect);
         return dtoPage;
     }
 
     @Override
-    public Page<OfficeDto> getAllOffice(Integer pageNum, Integer pageSize, String officeName) {
+    public Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName) {
         Page<Office> pageInfo = new Page<>(pageNum,pageSize);
         LambdaQueryWrapper<Office> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.orderByAsc(Office::getCid); //根据学院id排序
         queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
         this.baseMapper.selectPage(pageInfo, queryWrapper);
         //Dto处理
-        List<OfficeDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            OfficeDto dto = new OfficeDto();
+        List<OfficeVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            OfficeVo dto = new OfficeVo();
             BeanUtils.copyProperties(item, dto);
             College college = collegeMapper.selectById(item.getCid());
             if (college != null) {
@@ -72,7 +72,7 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
             }
             return dto;
         }).collect(Collectors.toList());
-        Page<OfficeDto> dtoPage = new Page<>(pageNum,pageSize);
+        Page<OfficeVo> dtoPage = new Page<>(pageNum,pageSize);
         BeanUtils.copyProperties(pageInfo,dtoPage,"records");
         dtoPage.setRecords(collect);
         return dtoPage;
@@ -81,5 +81,15 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
     @Override
     public Long getOidByName(String officeName) {
         return this.baseMapper.getOidByName(officeName);
+    }
+
+    @Override
+    public String getOfficeNameByOid(Long id) {
+        return this.baseMapper.getOfficeNameByOid(id);
+    }
+
+    @Override
+    public List<Office> getOfficeListByCid(Long cid) {
+        return this.baseMapper.getOfficeListByCid(cid);
     }
 }

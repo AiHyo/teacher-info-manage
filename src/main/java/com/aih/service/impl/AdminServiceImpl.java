@@ -2,11 +2,11 @@ package com.aih.service.impl;
 
 import cn.hutool.core.util.StrUtil;
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.AuditInfoDto;
-import com.aih.entity.vo.RequestCollegeChangeDto;
-import com.aih.entity.vo.TeacherDto;
+import com.aih.entity.vo.auditvo.AuditInfoVo;
+import com.aih.entity.vo.RequestCollegeChangeVo;
+import com.aih.entity.vo.TeacherVo;
 import com.aih.mapper.*;
-import com.aih.service.IAdminService;
+import com.aih.service.*;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.utils.MyUtil;
@@ -20,12 +20,12 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,6 +46,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Autowired
     private TeacherMapper teacherMapper;
     @Autowired
+    private ITeacherService teacherService;
+    @Autowired
     private PasswordEncoder passwordEncoder;
     @Autowired
     private OfficeMapper officeMapper;
@@ -58,8 +60,22 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     @Autowired
     private MyUtil myUtil;
     @Autowired
-    private AcademicPaperAuditServiceImpl academicPaperService;
+    private IAcademicPaperAuditService academicPaperService;
+    @Autowired
+    private IEducationExperienceAuditService educationExperienceService;
+    @Autowired
+    private IHonoraryAwardAuditService honoraryAwardService;
+    @Autowired
+    private IProjectAuditService projectService;
+    @Autowired
+    private ISoftwareAuditService softwareService;
+    @Autowired
+    private ITopicAuditService topicService;
+    @Autowired
+    private IWorkExperienceAuditService workExperienceService;
 
+    @Value("${default-password}")
+    String defaultPassword;
 
     @Override
     public Map<String, Object> login(Admin admin) {
@@ -80,6 +96,9 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             //返回数据
             HashMap<String, Object> data = new HashMap<>();
             data.put("token",token);
+            data.put("isDefault",admin.getPassword().equals(defaultPassword));//是否是默认密码
+            data.put("adminName",loginAdmin.getAdminName());
+            data.put("collegeName",collegeMapper.getCollegeNameByCid(loginAdmin.getCid()));
             return data;
         }
         throw new CustomException(CustomExceptionCodeMsg.USERNAME_OR_PASSWORD_ERROR);
@@ -125,7 +144,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
 
     @Override
-    public Page<AuditInfoDto> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
+    public Page<AuditInfoVo> getAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
         Long uid = UserInfoContext.getUser().getId();
         Admin cur_admin = this.baseMapper.selectById(uid);
         //获取管理员有审核权限的tidList
@@ -133,101 +152,60 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if(adminCanAuditTids.isEmpty()) {
             return new Page<>();
         }
-        //封装所有的审核信息
-        ArrayList<AuditInfoDto> all_auditInfoDtoList = new ArrayList<>();
-        // === AcademicPaperAudit ===
-        LambdaQueryWrapper<AcademicPaperAudit> queryWrapper_academicPaper = new LambdaQueryWrapper<>();
-        queryWrapper_academicPaper
-                .in(AcademicPaperAudit::getTid, adminCanAuditTids)
-                .eq(auditStatus!=null,AcademicPaperAudit::getAuditStatus, auditStatus)
-                .ge(AcademicPaperAudit::getCreateTime, cur_admin.getCreateDate())//上任以来(针对未审核的)
-                .eq(onlyOwn, AcademicPaperAudit::getAid, cur_admin.getId());//只看自己审核的(针对审核过的)
-        if (auditStatus != null && auditStatus != 0){//选出没有在删除角色中的
-            queryWrapper_academicPaper.and( wrapper -> wrapper
-                    .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(AcademicPaperAudit::getDeleteRoles));
-        }
-
-        List<AcademicPaperAudit> academicPaperAuditList = academicPaperService.list(queryWrapper_academicPaper);
-        log.info("academicPaperAuditList={}", academicPaperAuditList);
-        List<AuditInfoDto> one_auditInfoDtoList = academicPaperAuditList.stream().map((item -> {
-            AuditInfoDto dto = new AuditInfoDto();
-            dto.setAuditType("论文材料");
-            dto.setId(item.getId());
-            Integer _auditStatus = item.getAuditStatus();
-            dto.setAuditStatus(_auditStatus == 1 ? "审核通过": _auditStatus == 2 ? "审核未通过": "待审核");
-            dto.setCreateTime(item.getCreateTime());
-            dto.setAuditTime(item.getAuditTime());
-            Teacher teacher = teacherMapper.selectById(item.getTid());
-            if (teacher != null) {
-                dto.setTeacherName(teacher.getTeacherName());
-                dto.setOfficeName(officeMapper.getOfficeNameByOid(teacher.getOid()));
-                dto.setCollegeName(collegeMapper.getCollegeNameByCid(teacher.getCid()));
-            }
-            dto.setAuditName(this.baseMapper.getAdminNameByAid(item.getAid()));
-            return dto;
-        })).collect(Collectors.toList());
-        all_auditInfoDtoList.addAll(one_auditInfoDtoList);
-        // === EducationExperienceAudit ===
-        // ……………………………………………………………………………………
-        // === OtherAudit ===
-        // === OtherAudit ===
-        // === OtherAudit ===
-        // === OtherAudit ===
-
-
-        Page<AuditInfoDto> pageInfo = new Page<>(pageNum, pageSize);
-        pageInfo.setRecords(all_auditInfoDtoList);
-        pageInfo.setTotal(all_auditInfoDtoList.size());
+        //获取所有的审核信息
+        List<AuditInfoVo> all_auditInfoVoList = teacherService.getAllAuditInfoDtoList(adminCanAuditTids, auditStatus, onlyOwn,uid,cur_admin.getCreateDate());
+        Page<AuditInfoVo> pageInfo = new Page<>(pageNum, pageSize);
+        pageInfo.setRecords(all_auditInfoVoList);
+        pageInfo.setTotal(all_auditInfoVoList.size());
         return pageInfo;
     }
 
     @Override
-    public Page<RequestCollegeChangeDto> getChangeCollegeRequestList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
+    public Page<RequestCollegeChangeVo> getChangeCollegeRequestList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
         Long uid = UserInfoContext.getUser().getId();
+        log.info("uid:{}=========================================",uid);
         LambdaQueryWrapper<RequestCollegeChange> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(RequestCollegeChange::getOldCid,UserInfoContext.getUser().getCid())
                 .eq(auditStatus!=null,RequestCollegeChange::getAuditStatus,auditStatus)
                 .eq( onlyOwn, RequestCollegeChange::getOldAid, uid); // 只看自己审核的
-        if (auditStatus != null && auditStatus != 0){//选出没有在删除角色中的
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(RequestCollegeChange::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(RequestCollegeChange::getDeleteRoles));
-        }
+        //选出没有在删除角色中的
+        queryWrapper.and( wrapper -> wrapper
+                .notLike(RequestCollegeChange::getDeleteRoles, "," + uid + ",")
+                .or().isNull(RequestCollegeChange::getDeleteRoles));
         Page<RequestCollegeChange> page = new Page<>(pageNum, pageSize);
         requestCollegeChangeMapper.selectPage(page,queryWrapper);
-        List<RequestCollegeChangeDto> collect = page.getRecords().stream().map((item -> {
-            RequestCollegeChangeDto requestCollegeChangeDto = new RequestCollegeChangeDto();
-            BeanUtils.copyProperties(item, requestCollegeChangeDto);
-            requestCollegeChangeDto.setTeacherName(teacherMapper.getTeacherNameByTid(item.getTid()));
-            requestCollegeChangeDto.setOldCollegeName(collegeMapper.getCollegeNameByCid(item.getOldCid()));
-            requestCollegeChangeDto.setOldAdminName(this.baseMapper.getAdminNameByAid(item.getOldAid()));
-            requestCollegeChangeDto.setNewCollegeName(collegeMapper.getCollegeNameByCid(item.getNewCid()));
-            requestCollegeChangeDto.setNewAdminName(this.baseMapper.getAdminNameByAid(item.getNewAid()));
-            return requestCollegeChangeDto;
+        List<RequestCollegeChangeVo> collect = page.getRecords().stream().map((item -> {
+            RequestCollegeChangeVo requestCollegeChangeVo = new RequestCollegeChangeVo();
+            BeanUtils.copyProperties(item, requestCollegeChangeVo);
+            requestCollegeChangeVo.setTeacherName(teacherMapper.getTeacherNameByTid(item.getTid()));
+            requestCollegeChangeVo.setOldCollegeName(collegeMapper.getCollegeNameByCid(item.getOldCid()));
+            requestCollegeChangeVo.setOldAdminName(this.baseMapper.getAdminNameByAid(item.getOldAid()));
+            requestCollegeChangeVo.setNewCollegeName(collegeMapper.getCollegeNameByCid(item.getNewCid()));
+            requestCollegeChangeVo.setNewAdminName(this.baseMapper.getAdminNameByAid(item.getNewAid()));
+            return requestCollegeChangeVo;
         })).collect(Collectors.toList());
-        Page<RequestCollegeChangeDto> dtoPage = new Page<>(pageNum, pageSize);
+        Page<RequestCollegeChangeVo> dtoPage = new Page<>(pageNum, pageSize);
         BeanUtils.copyProperties(page,dtoPage,"records");
         dtoPage.setRecords(collect);
         return dtoPage;
     }
 
     @Override
-    public Page<RequestCollegeChangeDto> getChangeCollegeAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
+    public Page<RequestCollegeChangeVo> getChangeCollegeAuditList(Integer pageNum, Integer pageSize, Integer auditStatus, boolean onlyOwn) {
         Long uid = UserInfoContext.getUser().getId();
+        log.info("uid:{}=========================================",uid);
         LambdaQueryWrapper<RequestCollegeChange> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.eq(RequestCollegeChange::getNewCid,UserInfoContext.getUser().getCid())
                 .eq(auditStatus!=null,RequestCollegeChange::getAuditStatus,auditStatus)
                 .eq( onlyOwn, RequestCollegeChange::getNewAid, uid); // 只看自己审核的
-        if (auditStatus != null && auditStatus != 0){//选出没有在删除角色中的
+        //选出没有在删除角色中的
             queryWrapper.and( wrapper -> wrapper
                     .notLike(RequestCollegeChange::getDeleteRoles, "," + uid + ",")
                     .or().isNull(RequestCollegeChange::getDeleteRoles));
-        }
         Page<RequestCollegeChange> page = new Page<>(pageNum, pageSize);
         requestCollegeChangeMapper.selectPage(page,queryWrapper);
-        List<RequestCollegeChangeDto> collect = page.getRecords().stream().map((item -> {
-            RequestCollegeChangeDto dto = new RequestCollegeChangeDto();
+        List<RequestCollegeChangeVo> collect = page.getRecords().stream().map((item -> {
+            RequestCollegeChangeVo dto = new RequestCollegeChangeVo();
             BeanUtils.copyProperties(item, dto);
             dto.setTeacherName(teacherMapper.getTeacherNameByTid(item.getTid()));
             dto.setOldCollegeName(collegeMapper.getCollegeNameByCid(item.getOldCid()));
@@ -236,7 +214,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             dto.setNewAdminName(this.baseMapper.getAdminNameByAid(item.getNewAid()));
             return dto;
         })).collect(Collectors.toList());
-        Page<RequestCollegeChangeDto> dtoPage = new Page<>(pageNum, pageSize);
+        Page<RequestCollegeChangeVo> dtoPage = new Page<>(pageNum, pageSize);
         BeanUtils.copyProperties(page,dtoPage,"records");
         dtoPage.setRecords(collect);
         return dtoPage;
@@ -295,11 +273,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if (requestCollegeChange == null) {
             throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_REQUEST_COLLEGE_CHANGE);
         }
+        Long u_cid = UserInfoContext.getUser().getCid();
         //判断是否是oldAid或者newAid
         Long oldAid = requestCollegeChange.getOldAid();
-        Long newAid = requestCollegeChange.getNewAid();
+        Long oldCid = requestCollegeChange.getOldCid();
+        Long newCid = requestCollegeChange.getNewCid();
         Long uid = UserInfoContext.getUser().getId();
-        if (!oldAid.equals(uid) && !newAid.equals(uid)) {
+        if (!oldCid.equals(u_cid) && !newCid.equals(u_cid)) {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
         }
         //如果是待审核,只有oldAid可以,并且直接删除该申请记录
@@ -333,7 +313,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
     }
 
     @Override
-    public Page<TeacherDto> getTeacherList(Integer pageNum, Integer pageSize, String keyword, Long oid, String officeName, String teacherName, Integer isAuditor, Integer gender, String ethnic, String birthplace, String address) {
+    public Page<TeacherVo> getTeacherList(Integer pageNum, Integer pageSize, String keyword, Long oid, String officeName, String teacherName, Integer isAuditor, Integer gender, String ethnic, String birthplace, String address) {
         log.debug("进入getTeacherListServiceImpl");
         Page<Teacher> pageInfo = new Page<>(pageNum, pageSize);
         Long cid = UserInfoContext.getUser().getCid();
@@ -374,8 +354,8 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         if (StrUtil.isNotBlank(teacherName)) {
             pageInfo.getRecords().removeIf(teacher -> !teacher.getTeacherName().contains(teacherName));//如果不包含teacherName,就移除
         }
-        List<TeacherDto> collect = pageInfo.getRecords().stream().map((item -> {
-            TeacherDto teacherDto = new TeacherDto();
+        List<TeacherVo> collect = pageInfo.getRecords().stream().map((item -> {
+            TeacherVo teacherDto = new TeacherVo();
             BeanUtils.copyProperties(item, teacherDto);//复制item给TeacherDto
             teacherDto.setOfficeName(officeMapper.getOfficeNameByOid(item.getOid()));
             teacherDto.setCollegeName(collegeMapper.getCollegeNameByCid(item.getCid()));
@@ -383,7 +363,7 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             teacherDto.setRoleList(String.join(",", roleNameByTeacherId));
             return teacherDto;
         })).collect(Collectors.toList());
-        Page<TeacherDto> dtoPage = new Page<>(pageNum, pageSize);
+        Page<TeacherVo> dtoPage = new Page<>(pageNum, pageSize);
         BeanUtils.copyProperties(pageInfo,dtoPage,"records");
         dtoPage.setRecords(collect);
         return dtoPage;

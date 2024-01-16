@@ -1,34 +1,24 @@
 package com.aih.controller;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.poi.excel.ExcelReader;
-import cn.hutool.poi.excel.ExcelUtil;
 import com.aih.common.interceptor.AuthAccess;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
-import com.aih.entity.vo.OfficeDto;
-import com.aih.entity.vo.TeacherExcelReader;
+import com.aih.entity.vo.AdminVo;
+import com.aih.entity.vo.CollegeWithOfficeVo;
+import com.aih.entity.vo.OfficeInCollege;
 import com.aih.service.*;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.swagger.annotations.ApiOperation;
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.multipart.MultipartFile;
 
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -67,55 +57,6 @@ public class SuperAdminController {
         superAdmin.setPassword(passwordEncoder.encode(superAdmin.getPassword()));
         superAdminService.save(superAdmin);
         return R.success("创建成功");
-    }
-
-    @Value("${file.template-file-excel}")
-    String excelTemplateFile;
-    //下载导入教师账号模板文件
-    @ApiOperation("下载导入所需文件模板")
-    @GetMapping("/downloadExcelTemplate")
-    public R<?> downloadExcelTemplate(HttpServletResponse response) throws IOException {
-        File file = new File(excelTemplateFile);
-        //对文件名编码,解决中文文件名乱码问题
-        response.addHeader("Content-Disposition", "attachment;filename=" + URLEncoder.encode(file.getName(), "UTF-8"));  // 下载
-        //response.addHeader("Content-Disposition", "inline;filename=" + URLEncoder.encode(fileName, "UTF-8"));  // 预览
-        byte[] bytes = FileUtil.readBytes(file);
-        ServletOutputStream outputStream = response.getOutputStream();
-        outputStream.write(bytes);
-        outputStream.flush();
-        outputStream.close();
-        return R.success(excelTemplateFile);
-    }
-
-    @ApiOperation("Excel批量导入教师信息")
-    @PostMapping("/import")
-    @Transactional(rollbackFor=Exception.class) //事务回滚
-    public R<?> importExcel(MultipartFile file) throws IOException {
-        InputStream inputStream = file.getInputStream();//字节输入流
-        ExcelReader reader = ExcelUtil.getReader(inputStream);//通过输入流创建ExcelReader 对象
-        reader.addHeaderAlias("手机号", "phone");
-        reader.addHeaderAlias("学院名称", "collegeName");
-        reader.addHeaderAlias("办公室名称", "officeName");
-        // 读取
-        List<TeacherExcelReader> readerList = reader.readAll(TeacherExcelReader.class);
-        // 处理成需要插入的Teacher数据
-        List<Teacher> teacherList = readerList.stream().map(obj -> {
-            String phone = obj.getPhone();
-            Teacher teacher = new Teacher();
-            teacher.setUsername(phone); //登录账号默认手机号
-            teacher.setPassword(passwordEncoder.encode(defaultPassword));
-            teacher.setPhone(obj.getPhone());
-            teacher.setCid(collegeService.getCidByName(obj.getCollegeName()));
-            teacher.setOid(officeService.getOidByName(obj.getOfficeName()));
-            return teacher;
-        }).collect(Collectors.toList());
-        try {
-            teacherService.saveBatch(teacherList);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new CustomException(CustomExceptionCodeMsg.EXCEL_IMPORT_ERROR);
-        }
-        return R.success("导入成功");
     }
 
     /**
@@ -165,20 +106,45 @@ public class SuperAdminController {
 
     @ApiOperation("获取管理员列表")
     @GetMapping("/getAdminList")
-    public R<List<Admin>> getAdminList(){
+    public R<List<AdminVo>> getAdminList(){
         List<Admin> adminList = adminService.list();//查询所有管理员
-        return R.success(adminList);
+        List<AdminVo> collect = adminList.stream().map((item) -> {
+            AdminVo vo = new AdminVo();
+            item.setPassword(null);//密码不返回
+            BeanUtils.copyProperties(item, vo);
+            vo.setCollegeName(collegeService.getById(item.getCid()).getCollegeName());
+            return vo;
+        }).collect(Collectors.toList());
+        return R.success(collect);
     }
 
     /**
-     * status默认1表示启用
+     * 密码自动加密,status默认1表示启用。检查username是否存在,若存在,抛出自定义异常
      */
     @ApiOperation("添加管理员")
     @PostMapping("/addAdmin")
     public R<?> addAdmin(@RequestBody Admin admin){
+        this.checkAdminUsername(admin.getUsername());//检查用户名是否存在
         admin.setPassword(passwordEncoder.encode(admin.getPassword()));
+        admin.setStatus(1);//默认启用
         adminService.save(admin);
         return R.success("添加成功");
+    }
+
+    /**
+     * 根据username检验管理员用户名是否存在,若不存在,抛出自定义消息
+     * return "用户名可用"
+     */
+    @ApiOperation("检查管理员用户名是否存在")
+    @GetMapping("/checkAdminUsername")
+    public R<?> checkAdminUsername(@RequestParam String username){
+        LambdaQueryWrapper<Admin> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Admin::getUsername,username);
+        long count = adminService.count(queryWrapper);
+        if (count!=0) {
+            throw new CustomException(CustomExceptionCodeMsg.USERNAME_EXIST);
+        }
+        return R.success("用户名可用");
     }
 
     @ApiOperation("删除管理员")
@@ -246,21 +212,39 @@ public class SuperAdminController {
         return R.success("修改成功");
     }
 
-    //添加办公室,学院
-    // ============================= 学院 =============================
-    @ApiOperation("查看所有学院")
-    @GetMapping("/getAllCollege")
-    public R<Page<College>> getAllCollege(@RequestParam("pageNum") Integer pageNum,
-                                          @RequestParam("pageSize") Integer pageSize){
-        Page<College> page = new Page<>(pageNum, pageSize);
-        return R.success(collegeService.page(page));
+    // ======================= 添加办公室,学院 ============================
+    // 预查询
+    @ApiOperation("获取所有学院和对应教研室")
+    @GetMapping("/getCollegeAndOffice")
+    public R<?> getCollegeAndOffice(){
+        List<College> collegeList = collegeService.list();
+        List<CollegeWithOfficeVo> res = collegeList.stream().map((item) -> {
+            CollegeWithOfficeVo vo = new CollegeWithOfficeVo();
+            Long cid = item.getId();
+            vo.setId(cid);
+            vo.setCollegeName(item.getCollegeName());
+            List<Office> officeList = officeService.getOfficeListByCid(cid);
+            List<OfficeInCollege> officeInCollegeList = officeList.stream().map((office) -> {
+                OfficeInCollege officeInCollege = new OfficeInCollege();
+                officeInCollege.setId(office.getId());
+                officeInCollege.setOfficeName(office.getOfficeName());
+                return officeInCollege;
+            }).collect(Collectors.toList());
+            vo.setOfficeList(officeInCollegeList);
+            return vo;
+        }).collect(Collectors.toList());
+        return R.success(res);
     }
+    // ============================= 学院 =============================
     /**
      * @param collegeName 学院名称
      */
     @ApiOperation("添加学院")
     @PostMapping("/addCollege")
     public R<?> addCollege(@RequestParam("collegeName") String collegeName){
+        if (collegeService.getCidByName(collegeName)!=null) {
+            throw new CustomException(CustomExceptionCodeMsg.COLLEGE_NAME_EXIST);
+        }
         College college = new College();
         college.setCollegeName(collegeName);
         collegeService.save(college);
@@ -291,32 +275,22 @@ public class SuperAdminController {
     }
 
     // ============================= 办公室 =============================
-
-    /**
-     * @param pageNum 当前页码
-     * @param pageSize 每页大小
-     * @param officeName 办公室名称(可选),根据officeName模糊查询
-     */
-    @ApiOperation("查看所有办公室")
-    @GetMapping("/getAllOffice")
-    public R<Page<OfficeDto>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
-                                             @RequestParam("pageSize") Integer pageSize,
-                                              @RequestParam(required = false) String officeName){
-        return R.success(officeService.getOfficeByCollege(pageNum,pageSize, officeName));
-    }
     /**
      * 添加办公室,需要officeName办公室名称 & cid学院id。 检验cid是否存在,不存在抛出异常
-     * @param college officeName & cid 主要是cid(需要是存在的)
+     * @param office officeName & cid 主要是cid(需要是存在的)
      */
     @ApiOperation("添加办公室")
     @PostMapping("/addOffice")
-    public R<?> addOffice(@RequestBody Office college){
-        Long cid = college.getCid();
+    public R<?> addOffice(@RequestBody Office office){
+        Long cid = office.getCid();
         College findCollege = collegeService.getById(cid);//判断cid是否存在
         if (findCollege == null) {
             throw new CustomException(CustomExceptionCodeMsg.CID_ILLEGAL);
         }
-        officeService.save(college);
+        if (officeService.getOidByName(office.getOfficeName())!=null) {
+            throw new CustomException(CustomExceptionCodeMsg.OFFICE_NAME_EXIST);
+        }
+        officeService.save(office);
         return R.success("添加成功");
     }
 
@@ -342,7 +316,6 @@ public class SuperAdminController {
         collegeService.removeById(id);
         return R.success("删除成功");
     }
-
 
     //登出
     @ApiOperation("超级管理员登出")

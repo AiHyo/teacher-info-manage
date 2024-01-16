@@ -66,7 +66,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
             RoleType entityType = UserInfoContext.getUser().getRoleType();
             if (handlerMethod.getBeanType().equals(TeacherController.class)) {
                 log.info("在执行TeacherController中的方法");
-                if (entityType != RoleType.TEACHER){
+                if (entityType != RoleType.TEACHER && entityType != RoleType.AUDITOR){
                     throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
                 }
             } else if (handlerMethod.getBeanType().equals(AdminController.class)) {
@@ -112,6 +112,9 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
                     Admin t_admin = jwtUtil.parseToken(token, Admin.class);
                     Long uid = t_admin.getId();
                     Admin admin = adminMapper.selectById(uid); // 生成token时的包含的信息,除了id,其它可能会变,所以再用id去数据库查询实时数据
+                    if (admin.getStatus()==0){
+                        throw new CustomException(CustomExceptionCodeMsg.USER_IS_DISABLED);
+                    }
                     user.setId(uid);
                     user.setCid(admin.getCid());
                     user.setCreateDate(admin.getCreateDate());

@@ -1,6 +1,6 @@
 package com.aih.service.impl;
 
-import com.aih.entity.IdentityCardAudit;
+import com.aih.entity.audit.IdentityCardAudit;
 import com.aih.mapper.IdentityCardAuditMapper;
 import com.aih.mapper.TeacherMapper;
 import com.aih.service.IIdentityCardAuditService;

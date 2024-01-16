@@ -1,12 +1,9 @@
 package com.aih.service;
 
-import com.aih.entity.HonoraryAwardAudit;
-import com.aih.entity.HonoraryAwardAudit;
-import com.aih.entity.vo.audit.HonoraryAwardDto;
+import com.aih.entity.audit.HonoraryAwardAudit;
+import com.aih.entity.vo.auditvo.HonoraryAwardVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * <p>
@@ -21,13 +18,16 @@ public interface IHonoraryAwardAuditService extends IService<HonoraryAwardAudit>
 
     void rejectHonoraryAwardAudit(HonoraryAwardAudit academicPaper);
 
-    Page<HonoraryAwardDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+    Page<HonoraryAwardVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
 
-    Page<HonoraryAwardDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
+    Page<HonoraryAwardVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
 
     void deleteOwnInfo(Long id);
 
     String deleteRecord(Long id);
 
-    HonoraryAwardDto queryDtoById(Long id);
+    HonoraryAwardVo queryDtoById(Long id);
+
+    //Dto转换
+    HonoraryAwardVo getDto(HonoraryAwardAudit honoraryAward);
 }

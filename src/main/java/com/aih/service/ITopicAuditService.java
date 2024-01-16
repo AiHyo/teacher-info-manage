@@ -1,12 +1,9 @@
 package com.aih.service;
 
-import com.aih.entity.ProjectAudit;
-import com.aih.entity.TopicAudit;
-import com.aih.entity.vo.audit.TopicDto;
+import com.aih.entity.audit.TopicAudit;
+import com.aih.entity.vo.auditvo.TopicVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * <p>
@@ -21,13 +18,15 @@ public interface ITopicAuditService extends IService<TopicAudit> {
 
     void rejectTopicAudit(TopicAudit academicPaper);
 
-    Page<TopicDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+    Page<TopicVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
 
-    Page<TopicDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
+    Page<TopicVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
 
     void deleteOwnInfo(Long id);
 
     String deleteRecord(Long id);
 
-    TopicDto queryDtoById(Long id);
+    TopicVo queryDtoById(Long id);
+
+    TopicVo getDto(TopicAudit audit);
 }

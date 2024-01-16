@@ -1,14 +1,10 @@
 package com.aih.controller;
 
 import cn.hutool.core.collection.CollUtil;
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
-import cn.hutool.core.util.ZipUtil;
-import cn.hutool.poi.excel.ExcelWriter;
-import com.aih.common.aop_log.LogAnnotation;
 import com.aih.entity.*;
+import com.aih.entity.dto.TeacherDto;
 import com.aih.entity.vo.*;
-import com.aih.entity.vo.audit.AuditInfoDto;
 import com.aih.mapper.*;
 import com.aih.service.*;
 import com.aih.common.exception.CustomException;
@@ -19,7 +15,6 @@ import com.aih.utils.vo.R;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.deepoove.poi.XWPFTemplate;
 import io.swagger.annotations.ApiOperation;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +23,10 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import javax.annotation.Resource;
-import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
-import java.io.IOException;
-import java.net.URLEncoder;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 /**
  * 管理员 Controller
@@ -50,6 +41,8 @@ public class AdminController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+    @Autowired
+    private IRoleService roleService;
     @Autowired
     private IAdminService adminService;
     @Autowired
@@ -103,9 +96,9 @@ public class AdminController {
 
     @ApiOperation("获取个人信息")
     @GetMapping("/showInfo")
-    public R<Admin> showInfo() {
+    public R<AdminVo> showInfo() {
         Admin admin = adminService.showInfo();
-        return R.success(admin);
+        return R.success(new AdminVo(admin, collegeService.getCollegeNameByCid(admin.getCid())));
     }
 
 
@@ -139,37 +132,58 @@ public class AdminController {
 
     /**
      * 修改教师信息,如果[tid/oid]不存在/不属于自己学院,抛出自定义异常信息
-     * username,isAuditor,cid强制置空,不允许修改.password自动加密
-     * @param teacher
+     * username,cid强制置空,不允许修改.password自动加密
+     * @param teacherDto
      * @return
      */
     @ApiOperation("修改教师信息")
     @PutMapping("/updateTeacher")
-    public R<?> updateTeacher(@RequestBody Teacher teacher){
+    public R<?> updateTeacher(@RequestBody TeacherDto teacherDto){
         //检验tid
-        this.checkTeacherIds(CollUtil.newArrayList(teacher.getId()));
-        if (StrUtil.isNotBlank(teacher.getPassword())) {
-            teacher.setPassword(passwordEncoder.encode(teacher.getPassword()));
+        Long tid = teacherDto.getId();
+        this.checkTeacherIds(CollUtil.newArrayList(tid));
+        if (StrUtil.isNotBlank(teacherDto.getPassword())) {
+            teacherDto.setPassword(passwordEncoder.encode(teacherDto.getPassword()));
         }
-        if (StrUtil.isNotBlank(teacher.getUsername())) {
-            teacher.setUsername(null);
+        if (StrUtil.isNotBlank(teacherDto.getUsername())) {
+            teacherDto.setUsername(null);
         }
-        if (teacher.getIsAuditor()!=null) {
-            teacher.setTeacherName(null);
-        }
-        if (teacher.getCid()!=null) {
-            teacher.setGender(null);
+        if (teacherDto.getCid()!=null) {
+            teacherDto.setCid(null);
         }
         //如果有oid,检验oid
-        if (teacher.getOid()!=null) {
-            Office findOffice = officeMapper.selectById(teacher.getOid());
+        Long oid = teacherDto.getOid();
+        if (oid !=null) {
+            Office findOffice = officeMapper.selectById(oid);
             if (findOffice == null) {
                 throw new CustomException(CustomExceptionCodeMsg.NOT_FOUND_OFFICE);
             }
-            if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
+            if (oid!=0 && !findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
                 throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
             }
         }
+        MyUtil.checkPhone(teacherDto.getPhone());//检验手机号格式
+        List<Long> roleIds = teacherDto.getRids();
+        if (!roleIds.isEmpty()){
+            roleService.updateTeacherRole(tid,roleIds);
+        }
+        Teacher teacher = new Teacher();
+        teacher.setId(tid);
+        teacher.setTeacherName(teacherDto.getTeacherName());
+        teacher.setUsername(teacherDto.getUsername());
+        teacher.setPassword(teacherDto.getPassword());
+        teacher.setGender(teacherDto.getGender());
+        teacher.setEthnic(teacherDto.getEthnic());
+        teacher.setNativePlace(teacherDto.getNativePlace());
+        teacher.setAddress(teacherDto.getAddress());
+        teacher.setPhone(teacherDto.getPhone());
+        teacher.setPoliticsStatus(teacherDto.getPoliticsStatus());
+        teacher.setEducationDegree(teacherDto.getEducationDegree());
+        teacher.setIdNumber(teacherDto.getIdNumber());
+        teacher.setStartDate(teacherDto.getStartDate());
+        teacher.setCreateDate(teacherDto.getCreateDate());
+        teacher.setDeleted(teacherDto.getDeleted());
+        teacher.setOid(teacherDto.getOid());
         teacherService.updateById(teacher);
         return R.success("修改成功");
     }
@@ -301,44 +315,6 @@ public class AdminController {
     }
 
 
-//    /**
-//     * 根据tid查看教师的职务。检验tid是否存在/有无权限。
-//     * @param tid
-//     * @return
-//     */
-//    @ApiOperation("查看教师的职务")
-//    @GetMapping("/showTeacherRoleList/{tid}")
-//    public R<List<Role>> showMyRoleList(@PathVariable Long tid){
-//        this.checkTeacherIds(CollUtil.newArrayList(tid));//检验tid是否存在/有无权限
-//        List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
-//        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-//        queryWrapper.in(Role::getId,rids);
-//        return R.success(roleMapper.selectList(queryWrapper));
-//    }
-
-//    /** 根据tid和rids修改教师的职务。检验有无对tid的权限,rids是否都存在
-//     * @param tid 教师id
-//     * @param rids 职务id列表
-//     */
-//    @ApiOperation("修改教师的职务")
-//    @PutMapping("/updateRole/{tid}")
-//    public R<?> updateRole(@PathVariable Long tid,@RequestParam("rids") List<Long> rids){
-//        this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
-//        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-//        queryWrapper.in(Role::getId,rids);
-//        List<Role> roleList = roleMapper.selectList(queryWrapper);
-//        if (roleList.size()!=rids.size()) {
-//            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-//        }
-//        //删除tid的所有数据
-//        teacherRoleMapper.deleteTeacherRoleByTid(tid);
-//        //插入新的数据
-//        for (Long rid : rids) {
-//            teacherRoleMapper.insert(new TeacherRole(tid,rid));
-//        }
-//        return R.success("修改角色成功");
-//    }
-
     /**
      * @param id      职务id
      */
@@ -351,18 +327,22 @@ public class AdminController {
     // ============================= 办公室 =============================
     @ApiOperation("查看自己学院下的办公室")
     @GetMapping("/getAllOffice")
-    public R<Page<OfficeDto>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
-                                              @RequestParam("pageSize") Integer pageSize,
-                                              @RequestParam(value = "officeName", required = false) String officeName){
+    public R<Page<OfficeVo>> getAllOfficeDto(@RequestParam("pageNum") Integer pageNum,
+                                             @RequestParam("pageSize") Integer pageSize,
+                                             @RequestParam(value = "officeName", required = false) String officeName){
         return R.success(officeService.getOfficeByCollege(pageNum,pageSize,officeName));
     }
     /**
-     * 在当前学院添加办公室
+     * 在当前学院添加办公室 如果办公室名已存在,则返回自定义信息
      * @param officeName 新办公室名
      */
     @ApiOperation("添加办公室")
     @PostMapping("/addOffice")
     public R<?> addOffice(@RequestParam String officeName){
+        Long oid = officeService.getOidByName(officeName);
+        if (oid != null) {
+            throw new CustomException(CustomExceptionCodeMsg.OFFICE_NAME_EXIST);
+        }
         Office office = new Office();
         office.setOfficeName(officeName);
         office.setCid(UserInfoContext.getUser().getCid());
@@ -371,7 +351,7 @@ public class AdminController {
     }
 
     /**
-     * 根据id修改办公室名称。id不存在/不是自己学院的,不存在抛出自定义信息
+     * 根据id修改办公室名称。id不存在/不是自己学院的,不存在抛出自定义信息。办公室新名称已存在则返回自定义信息
      * @param id    办公室id
      * @param officeName 办公室新名称
      * @return
@@ -387,7 +367,9 @@ public class AdminController {
         if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
         }
-
+        if (officeService.getOidByName(officeName) != null) {
+            throw new CustomException(CustomExceptionCodeMsg.OFFICE_NAME_EXIST);
+        }
         findOffice.setOfficeName(officeName);
         officeService.updateById(findOffice);
         return R.success("修改成功");
@@ -486,10 +468,10 @@ public class AdminController {
      */
     @ApiOperation("查看学院转出的申请")
     @GetMapping("/getChangeCollegeRequestList")
-    public R<Page<RequestCollegeChangeDto>> getChangeCollegeRequestList(@RequestParam("pageNum") Integer pageNum,
-                                                                        @RequestParam("pageSize") Integer pageSize,
-                                                                        @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
-                                                                        @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+    public R<Page<RequestCollegeChangeVo>> getChangeCollegeRequestList(@RequestParam("pageNum") Integer pageNum,
+                                                                       @RequestParam("pageSize") Integer pageSize,
+                                                                       @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+                                                                       @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
         if(auditStatus!=null){
             MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
         }
@@ -505,10 +487,10 @@ public class AdminController {
      */
     @ApiOperation("查看转来学院的申请")
     @GetMapping("/getChangeCollegeAuditList")
-    public R<Page<RequestCollegeChangeDto>> getChangeCollegeAuditList(@RequestParam("pageNum") Integer pageNum,
-                                                                      @RequestParam("pageSize") Integer pageSize,
-                                                                      @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
-                                                                      @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
+    public R<Page<RequestCollegeChangeVo>> getChangeCollegeAuditList(@RequestParam("pageNum") Integer pageNum,
+                                                                     @RequestParam("pageSize") Integer pageSize,
+                                                                     @RequestParam(value = "auditStatus", required = false) Integer auditStatus,
+                                                                     @RequestParam(value = "onlyOwn",required = false,defaultValue = "false")boolean onlyOwn) {
         if(auditStatus!=null){
             MyUtil.checkAuditStatus(auditStatus);//检查auditStatus参数是否合法
         }

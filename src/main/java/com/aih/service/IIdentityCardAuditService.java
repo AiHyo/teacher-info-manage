@@ -1,6 +1,6 @@
 package com.aih.service;
 
-import com.aih.entity.IdentityCardAudit;
+import com.aih.entity.audit.IdentityCardAudit;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 import java.util.List;

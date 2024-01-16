@@ -8,6 +8,7 @@ import com.aih.entity.Teacher;
 import com.aih.entity.TeacherRole;
 import com.aih.mapper.RoleMapper;
 import com.aih.mapper.TeacherRoleMapper;
+import com.aih.service.IRoleService;
 import com.aih.service.ITeacherService;
 import com.aih.utils.UserInfoContext;
 import com.aih.utils.vo.R;
@@ -33,17 +34,53 @@ import java.util.stream.Collectors;
 public class RoleController {
 
     @Autowired
-    private RoleMapper roleMapper;
+    private IRoleService roleService;
     @Autowired
     private ITeacherService teacherService;
     @Autowired
     private TeacherRoleMapper teacherRoleMapper;
 
+
     @ApiOperation("查看所有的职务")
     @GetMapping("/getAllRole")
     public R<List<Role>> showRoleList(){
-        return R.success(roleMapper.selectList(null));
+        return R.success(roleService.list(null));
     }
+
+    /**
+     * 添加职务
+     * @param role。传入roleName职务名称就行
+     * @return
+     */
+    @ApiOperation("[管理员]添加所有的职务")
+    @PostMapping("/addRole")
+    public R<?> addRole(@RequestBody Role role){
+        if(UserInfoContext.getUser().getRoleType()!=RoleType.ADMIN){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
+        }
+        //重复就抛出
+        if (roleService.getOne(new LambdaQueryWrapper<Role>().eq(Role::getRoleName,role.getRoleName()))!=null) {
+            throw new CustomException(CustomExceptionCodeMsg.ROLE_NAME_EXIST);
+        }
+        roleService.save(role);
+        return R.success("添加成功");
+    }
+
+    /**
+     * 删除职务
+     * @param id 职务id
+     * @return
+     */
+    @ApiOperation("[管理员]删除职务")
+    @DeleteMapping("/deleteRole/{id}")
+    public R<?> deleteRole(@PathVariable("id") Long id){
+        if(UserInfoContext.getUser().getRoleType()!=RoleType.ADMIN){
+            throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_ADMIN);
+        }
+        roleService.removeById(id);
+        return R.success("删除成功");
+    }
+
 
     /**
      * 根据tid查看教师的职务
@@ -54,7 +91,7 @@ public class RoleController {
     @GetMapping("/getRoleListByTid")
     public R<List<Role>> showRoleListByTid(@RequestParam(value = "tid",required = false) Long tid){
         if (tid==null) {//不传,则查看自己
-            if (UserInfoContext.getUser().getRoleType()!=RoleType.TEACHER) {
+            if (UserInfoContext.getUser().getId().toString().charAt(0) != '1') {
                 throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
             }
             tid= UserInfoContext.getUser().getId();
@@ -68,7 +105,7 @@ public class RoleController {
         List<Long> rids = teacherRoleMapper.selectByTid(tid).stream().map(TeacherRole::getRid).collect(Collectors.toList());
         LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.in(Role::getId,rids);
-        return R.success(roleMapper.selectList(queryWrapper));
+        return R.success(roleService.list(queryWrapper));
     }
 
 
@@ -80,7 +117,7 @@ public class RoleController {
     @PutMapping({"/updateRole"})
     public R<?> updateRole(@RequestParam(value = "tid",required = false) Long tid, @RequestParam("rids") List<Long> rids){
         if (tid==null) {//不传,则修改自己
-            if (UserInfoContext.getUser().getRoleType()!=RoleType.TEACHER) {
+            if (UserInfoContext.getUser().getId().toString().charAt(0) != '1') {
                 throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
             }
             tid = UserInfoContext.getUser().getId();
@@ -91,18 +128,7 @@ public class RoleController {
             this.checkTeacherIds(CollUtil.newArrayList(tid)); //检验tid是否存在/有无权限
         }
         // == 开始修改 ==
-        LambdaQueryWrapper<Role> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.in(Role::getId,rids);
-        List<Role> roleList = roleMapper.selectList(queryWrapper);
-        if (roleList.size()!=rids.size()) {
-            throw new CustomException(CustomExceptionCodeMsg.IDS_ILLEGAL);
-        }
-        //删除tid的所有数据
-        teacherRoleMapper.deleteTeacherRoleByTid(tid);
-        //插入新的数据
-        for (Long rid : rids) {
-            teacherRoleMapper.insert(new TeacherRole(tid,rid));
-        }
+        roleService.updateTeacherRole(tid,rids);
         return R.success("修改角色成功");
     }
 

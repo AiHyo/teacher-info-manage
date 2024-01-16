@@ -3,7 +3,8 @@ package com.aih.service.impl;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.ProjectDto;
+import com.aih.entity.audit.ProjectAudit;
+import com.aih.entity.vo.auditvo.ProjectVo;
 import com.aih.mapper.*;
 import com.aih.service.IProjectAuditService;
 import com.aih.utils.MyUtil;
@@ -50,7 +51,7 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
 
 
     @Override
-    public ProjectDto queryDtoById(Long id) {
+    public ProjectVo queryDtoById(Long id) {
         ProjectAudit findData = this.baseMapper.selectById(id);
         if (findData == null){
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
@@ -60,7 +61,7 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
         if (!powerIds.contains(UserInfoContext.getUser().getId())){
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
-        ProjectDto dto = this.getDto(findData);
+        ProjectVo dto = this.getDto(findData);
         return dto;
     }
 
@@ -78,9 +79,9 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
     }
 
     @Override
-    public Page<ProjectDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
+    public Page<ProjectVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
         Page<ProjectAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<ProjectDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<ProjectVo> dtoPageInfo = new Page<>(pageNum, pageSize);
 
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<ProjectAudit> queryWrapper = Wrappers.lambdaQuery();
@@ -89,15 +90,13 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
                 .like((StringUtils.isNotBlank(keyword)), ProjectAudit::getProjectName, keyword)//模糊查询
                 .orderByAsc(auditStatus==null, ProjectAudit::getAuditStatus)//先按审核状态升序 未审核=>通过=>未通过
                 .orderByDesc(ProjectAudit::getCreateTime);//再按创建时间倒序
-        if (auditStatus != null && auditStatus != 0){
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(ProjectAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(ProjectAudit::getDeleteRoles));
-        }
+        queryWrapper.and(wrapper -> wrapper
+                .notLike(ProjectAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(ProjectAudit::getDeleteRoles));
         this.baseMapper.selectPage(pageInfo,queryWrapper);
         //遍历每一条records(当前页下的所有数据)
-        List<ProjectDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            ProjectDto dto = this.getDto(item);
+        List<ProjectVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            ProjectVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
         BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
@@ -106,9 +105,9 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
     }
 
     @Override
-    public Page<ProjectDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
+    public Page<ProjectVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
         Page<ProjectAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<ProjectDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<ProjectVo> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
         List<Long> queryTids = null;
         if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
@@ -130,17 +129,15 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
                 .orderByAsc(auditStatus==null, ProjectAudit::getAuditStatus)
                 .orderByDesc(ProjectAudit::getCreateTime);//审核状态相同的则按创建时间越晚的显示在最前
         // 删除过记录的情况：需要判断删除角色
-        if (auditStatus != null && auditStatus != 0){
-            Long uid = UserInfoContext.getUser().getId();
-            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
-                    .notLike(ProjectAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(ProjectAudit::getDeleteRoles));
-        }
-//        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
+        Long uid = UserInfoContext.getUser().getId();
+        queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                .notLike(ProjectAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(ProjectAudit::getDeleteRoles));
+        //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
         this.baseMapper.selectPage(pageInfo, queryWrapper); //
         //遍历每一条records(当前页下的所有数据)
-        List<ProjectDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            ProjectDto dto = this.getDto(item);
+        List<ProjectVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            ProjectVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
 
@@ -213,8 +210,9 @@ public class ProjectAuditServiceImpl extends ServiceImpl<ProjectAuditMapper, Pro
     }
 
     //Dto转换
-    private ProjectDto getDto(ProjectAudit project){
-        ProjectDto dto = new ProjectDto();
+    @Override
+    public ProjectVo getDto(ProjectAudit project){
+        ProjectVo dto = new ProjectVo();
         BeanUtils.copyProperties(project, dto);//将projectAudit的属性拷贝到dto中
         Long tid = project.getTid(); //获取tid,找到对应教师
         Long aid = project.getAid(); //获取aid,找到对应审核者id

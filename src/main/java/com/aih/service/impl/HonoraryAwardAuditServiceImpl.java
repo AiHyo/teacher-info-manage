@@ -3,7 +3,8 @@ package com.aih.service.impl;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.HonoraryAwardDto;
+import com.aih.entity.audit.HonoraryAwardAudit;
+import com.aih.entity.vo.auditvo.HonoraryAwardVo;
 import com.aih.mapper.*;
 import com.aih.service.IHonoraryAwardAuditService;
 import com.aih.utils.MyUtil;
@@ -50,7 +51,7 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
 
 
     @Override
-    public HonoraryAwardDto queryDtoById(Long id) {
+    public HonoraryAwardVo queryDtoById(Long id) {
         HonoraryAwardAudit findData = this.baseMapper.selectById(id);
         if (findData == null){
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
@@ -60,7 +61,7 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
         if (!powerIds.contains(UserInfoContext.getUser().getId())){
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
-        HonoraryAwardDto dto = this.getDto(findData);
+        HonoraryAwardVo dto = this.getDto(findData);
         return dto;
     }
 
@@ -78,9 +79,9 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
     }
 
     @Override
-    public Page<HonoraryAwardDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
+    public Page<HonoraryAwardVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
         Page<HonoraryAwardAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<HonoraryAwardDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<HonoraryAwardVo> dtoPageInfo = new Page<>(pageNum, pageSize);
 
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<HonoraryAwardAudit> queryWrapper = Wrappers.lambdaQuery();
@@ -89,15 +90,13 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
                 .like((StringUtils.isNotBlank(keyword)), HonoraryAwardAudit::getContent, keyword)//模糊查询
                 .orderByAsc(auditStatus==null, HonoraryAwardAudit::getAuditStatus)//先按审核状态升序 未审核=>通过=>未通过
                 .orderByDesc(HonoraryAwardAudit::getCreateTime);//再按创建时间倒序
-        if (auditStatus != null && auditStatus != 0){
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(HonoraryAwardAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(HonoraryAwardAudit::getDeleteRoles));
-        }
+        queryWrapper.and(wrapper -> wrapper
+                .notLike(HonoraryAwardAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(HonoraryAwardAudit::getDeleteRoles));
         this.baseMapper.selectPage(pageInfo,queryWrapper);
         //遍历每一条records(当前页下的所有数据)
-        List<HonoraryAwardDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            HonoraryAwardDto dto = this.getDto(item);
+        List<HonoraryAwardVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            HonoraryAwardVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
         BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
@@ -106,9 +105,9 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
     }
 
     @Override
-    public Page<HonoraryAwardDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
+    public Page<HonoraryAwardVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
         Page<HonoraryAwardAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<HonoraryAwardDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<HonoraryAwardVo> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
         List<Long> queryTids = null;
         if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
@@ -129,18 +128,16 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
                 .like((StringUtils.isNotBlank(keyword)), HonoraryAwardAudit::getContent, keyword)//模糊查询
                 .orderByAsc(auditStatus==null, HonoraryAwardAudit::getAuditStatus)
                 .orderByDesc(HonoraryAwardAudit::getCreateTime);//审核状态相同的则按创建时间越晚的显示在最前
-        // 删除过记录的情况：需要判断删除角色
-        if (auditStatus != null && auditStatus != 0){
-            Long uid = UserInfoContext.getUser().getId();
-            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
-                    .notLike(HonoraryAwardAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(HonoraryAwardAudit::getDeleteRoles));
-        }
-//        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
+        // 需要判断删除角色
+        Long uid = UserInfoContext.getUser().getId();
+        queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                .notLike(HonoraryAwardAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(HonoraryAwardAudit::getDeleteRoles));
+        //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
         this.baseMapper.selectPage(pageInfo, queryWrapper); //
         //遍历每一条records(当前页下的所有数据)
-        List<HonoraryAwardDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            HonoraryAwardDto dto = this.getDto(item);
+        List<HonoraryAwardVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            HonoraryAwardVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
 
@@ -213,8 +210,9 @@ public class HonoraryAwardAuditServiceImpl extends ServiceImpl<HonoraryAwardAudi
     }
 
     //Dto转换
-    private HonoraryAwardDto getDto(HonoraryAwardAudit honoraryAward){
-        HonoraryAwardDto dto = new HonoraryAwardDto();
+    @Override
+    public HonoraryAwardVo getDto(HonoraryAwardAudit honoraryAward){
+        HonoraryAwardVo dto = new HonoraryAwardVo();
         BeanUtils.copyProperties(honoraryAward, dto);//将honoraryAwardAudit的属性拷贝到dto中
         Long tid = honoraryAward.getTid(); //获取tid,找到对应教师
         Long aid = honoraryAward.getAid(); //获取aid,找到对应审核者id

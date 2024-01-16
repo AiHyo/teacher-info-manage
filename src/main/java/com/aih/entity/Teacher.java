@@ -46,7 +46,7 @@ public class Teacher implements Serializable {
     private String password;
 
     @Alias("性别")
-    @ApiModelProperty("性别   0:女 1:男")
+    @ApiModelProperty("性别 0:女 1:男")
     private Integer gender;
 
     @Alias("民族")

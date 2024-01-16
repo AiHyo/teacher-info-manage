@@ -61,7 +61,7 @@ public class ExportController {
      * @param tids       （可选）
      * @param oids      （可选）教研室oids
      * @param fileName  （可选）导出excel的名称,默认"教师信息表"
-     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,politicsStatus,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
+     * @param fieldList 只导出部分字段（可选）id,teacherName,username,gender,identityCard,roleList,ethnic,politicsStatus,birthplace,address,phone,collegeName,officeName,isAuditor,startDate
      * @throws IOException
      */
     @LogAnnotation(module = "管理员/审核员", operator = "Excel批量导出教师信息")
@@ -108,7 +108,7 @@ public class ExportController {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
         }
         //获取XWPFTemplate word写入器 渲染好数据的word
-        XWPFTemplate render = teacherService.getWordRender(findTeacher);
+        XWPFTemplate render = teacherService.getWordRenderByTid(tid);
         //在浏览器下载：设置response并写出docx
         String fileName = URLEncoder.encode(findTeacher.getTeacherName() + "教师信息表", "UTF-8");
         response.setContentType("application/vnd.openxmlformats-officedocument.wordprocessingml.document;charset=utf-8");
@@ -122,21 +122,22 @@ public class ExportController {
 
 
     //============================================压缩包================================================
-
     /**
      * 可选参数限制导出内容,不选就默认所有
      * @param ids 教师id
      * @param oids 教研室id(管理员才生效)
-     * @param fieldList      同Excel：id,teacherName,username,gender,identityCard,roleList,ethnic,politicsStatus,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
+     * @param fieldList      同Excel: id,teacherName,username,gender,identityCard,roleList,ethnic,politicsStatus,birthplace,address,phone,collegeName,officeName,isAuditor,createDate
      * @param attachmentList 附件种类 (暂未定,先不填)
+     * @param type 0:word 1:word+附件 2:word+附件+excel
      */
-    @ApiOperation("导出压缩包")
-    @GetMapping("/pack/")
+    @ApiOperation("打包导出")
+    @GetMapping("/pack")
     @LogAnnotation(module="管理员",operator="导出压缩包")
     public void exportZip(@RequestParam(value = "ids", required = false) List<Long> ids,
                           @RequestParam(value = "oids", required = false) List<Long> oids,
                           @RequestParam(value = "fieldList", required = false) List<String> fieldList,
-                          @RequestParam(value = "attachmentList", required = false) List<String> attachmentList) throws IOException {
+                          @RequestParam(value = "attachmentList", required = false) List<String> attachmentList,
+                          @RequestParam(value = "type", required = false)Integer type) throws IOException {
         //创建一个新的临时文件路径！！！
         if (FileUtil.exist(temporaryPath)) {
             FileUtil.del(temporaryPath);
@@ -148,12 +149,22 @@ public class ExportController {
         List<Teacher> teacherList = null;
         if (UserInfoContext.getUser().getRoleType()== RoleType.ADMIN){
             teacherList = this.admin_GetTeacherList(ids, oids);
-        }else {
+        }else if (UserInfoContext.getUser().getRoleType()== RoleType.AUDITOR){
             teacherList = this.auditor_GetTeacherList(ids);
+        }else {
+            Long tid = UserInfoContext.getUser().getId();
+            teacherList = teacherService.list(new LambdaQueryWrapper<Teacher>().eq(Teacher::getId,tid));
         }
         //添加需要压缩的文件
-        fileList.add(teacherService.getTeacherAttachmentFolder(teacherList,attachmentList));//教师附件文件夹
-        fileList.add(teacherService.getMyExcelFile(teacherList, fieldList)); //excel
+        if (type==null) {
+            type = 0;
+        }
+        if (type >= 2){
+            fileList.add(teacherService.getMyExcelFile(teacherList, fieldList)); //excel
+        }
+        if (type >= 1) {
+            fileList.add(teacherService.getTeacherAttachmentFolder(teacherList, attachmentList));//教师附件文件夹
+        }
         fileList.add(teacherService.getMyWordFolder(teacherList));           //word
         fileList.add(new File(rootPath + sep + "qwq.jpg"));
         //开始压缩

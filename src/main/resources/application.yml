@@ -4,7 +4,9 @@ spring:
   servlet:
     multipart:
       max-file-size: 128MB
-      max-request-size: 128MB
+      max-request-size: 512MB
+  main:
+    allow-circular-references: true # 允许bean的覆盖
 
 mybatis-plus:
   configuration:
@@ -21,5 +23,6 @@ mybatis-plus:
 
 excel:
   file-name: 教师信息表
+  import-template-name: 导入教师账号模板
 
 default-password: 123456

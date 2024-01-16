@@ -1,7 +1,8 @@
 package com.aih.service.impl;
 
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.AcademicPaperDto;
+import com.aih.entity.audit.AcademicPaperAudit;
+import com.aih.entity.vo.auditvo.AcademicPaperVo;
 import com.aih.mapper.*;
 import com.aih.service.IAcademicPaperAuditService;
 import com.aih.common.exception.CustomException;
@@ -50,7 +51,7 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
 
 
     @Override
-    public AcademicPaperDto queryDtoById(Long id) {
+    public AcademicPaperVo queryDtoById(Long id) {
         AcademicPaperAudit findData = this.baseMapper.selectById(id);
         if (findData == null){
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
@@ -60,7 +61,7 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
         if (!powerIds.contains(UserInfoContext.getUser().getId())){
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
-        AcademicPaperDto dto = this.getDto(findData);
+        AcademicPaperVo dto = this.getDto(findData);
         return dto;
     }
 
@@ -78,9 +79,9 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
     }
 
     @Override
-    public Page<AcademicPaperDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
+    public Page<AcademicPaperVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
         Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<AcademicPaperDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<AcademicPaperVo> dtoPageInfo = new Page<>(pageNum, pageSize);
 
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<AcademicPaperAudit> queryWrapper = Wrappers.lambdaQuery();
@@ -89,15 +90,13 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
                 .like((StringUtils.isNotBlank(keyword)), AcademicPaperAudit::getTitle, keyword)//模糊查询
                 .orderByAsc(auditStatus!=null, AcademicPaperAudit::getAuditStatus)//先按审核状态升序 未审核=>通过=>未通过
                 .orderByDesc(AcademicPaperAudit::getCreateTime);//再按创建时间倒序
-        if (auditStatus != null && auditStatus != 0){
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(AcademicPaperAudit::getDeleteRoles));
-        }
+        queryWrapper.and(wrapper -> wrapper
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(AcademicPaperAudit::getDeleteRoles));
         this.baseMapper.selectPage(pageInfo,queryWrapper);
         //遍历每一条records(当前页下的所有数据)
-        List<AcademicPaperDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            AcademicPaperDto dto = this.getDto(item);
+        List<AcademicPaperVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            AcademicPaperVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
         BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
@@ -106,9 +105,9 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
     }
 
     @Override
-    public Page<AcademicPaperDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
+    public Page<AcademicPaperVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
         Page<AcademicPaperAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<AcademicPaperDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<AcademicPaperVo> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
         List<Long> queryTids = null;
         if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
@@ -130,17 +129,15 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
                 .orderByAsc(auditStatus==null, AcademicPaperAudit::getAuditStatus)
                 .orderByDesc(AcademicPaperAudit::getCreateTime);//审核状态相同的按创建时间越晚的显示在最前
         // 删除过记录的情况：需要判断删除角色
-        if (auditStatus != null && auditStatus != 0){
-            Long uid = UserInfoContext.getUser().getId();
-            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
-                    .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(AcademicPaperAudit::getDeleteRoles));
-        }
+        Long uid = UserInfoContext.getUser().getId();
+        queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                .notLike(AcademicPaperAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(AcademicPaperAudit::getDeleteRoles));
 //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
         this.baseMapper.selectPage(pageInfo, queryWrapper); //
         //遍历每一条records(当前页下的所有数据)
-        List<AcademicPaperDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            AcademicPaperDto dto = this.getDto(item);
+        List<AcademicPaperVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            AcademicPaperVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
 
@@ -214,8 +211,9 @@ public class AcademicPaperAuditServiceImpl extends ServiceImpl<AcademicPaperAudi
 
 
     //封装一个传入AcaPaperAudit返回AcaPaperDto的方法
-    private AcademicPaperDto getDto(AcademicPaperAudit academicPaper){
-        AcademicPaperDto dto = new AcademicPaperDto();
+    @Override
+    public AcademicPaperVo getDto(AcademicPaperAudit academicPaper){
+        AcademicPaperVo dto = new AcademicPaperVo();
         BeanUtils.copyProperties(academicPaper, dto);//将academicPaperAudit的属性拷贝到dto中
         Long tid = academicPaper.getTid(); //获取tid,找到对应教师
         Long aid = academicPaper.getAid(); //获取aid,找到对应审核者id

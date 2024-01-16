@@ -1,7 +1,6 @@
 package com.aih.service;
 
 import com.aih.entity.College;
-import com.aih.entity.vo.OfficeDto;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -18,4 +17,6 @@ public interface ICollegeService extends IService<College> {
     Page<College> getAllCollege(Integer pageNum, Integer pageSize, String collegeName);
 
     Long getCidByName(String collegeName);
+
+    String getCollegeNameByCid(Long cid);
 }

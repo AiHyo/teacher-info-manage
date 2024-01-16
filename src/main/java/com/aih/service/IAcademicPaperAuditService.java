@@ -1,7 +1,8 @@
 package com.aih.service;
 
-import com.aih.entity.AcademicPaperAudit;
-import com.aih.entity.vo.audit.AcademicPaperDto;
+import com.aih.entity.audit.AcademicPaperAudit;
+import com.aih.entity.vo.AdminVo;
+import com.aih.entity.vo.auditvo.AcademicPaperVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 
@@ -18,13 +19,15 @@ public interface IAcademicPaperAuditService extends IService<AcademicPaperAudit>
 
     void rejectAcademicPaperAudit(AcademicPaperAudit academicPaper);
 
-    Page<AcademicPaperDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+    Page<AcademicPaperVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
 
-    Page<AcademicPaperDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
+    Page<AcademicPaperVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
 
     void deleteOwnInfo(Long id);
 
     String deleteRecord(Long id);
 
-    AcademicPaperDto queryDtoById(Long id);
+    AcademicPaperVo queryDtoById(Long id);
+
+    AcademicPaperVo getDto(AcademicPaperAudit academicPaperAudit);
 }

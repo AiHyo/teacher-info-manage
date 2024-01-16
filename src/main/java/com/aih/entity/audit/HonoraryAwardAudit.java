@@ -1,0 +1,96 @@
+package com.aih.entity.audit;
+
+import com.baomidou.mybatisplus.annotation.*;
+
+import java.io.Serializable;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+/**
+ * <p>
+ * 荣誉奖项审核
+ * </p>
+ *
+ * @author AiH
+ * @since 2023-07-07
+ */
+@Data
+@AllArgsConstructor
+@NoArgsConstructor
+@TableName("honorary_award_audit")
+@ApiModel(value = "HonoraryAwardAudit对象", description = "荣誉奖项审核")
+public class HonoraryAwardAudit implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+
+    @ApiModelProperty("荣誉奖项id")
+    @TableId(value = "id", type = IdType.AUTO)
+    private Long id;
+
+    @ApiModelProperty("所属教师id")
+    @TableField(fill = FieldFill.INSERT)
+    private Long tid;
+
+    @ApiModelProperty("获奖时间")
+    private LocalDate getDate;
+
+    @ApiModelProperty("类型 0:团队 1:个人")
+    private Integer type;
+
+    @ApiModelProperty("内容")
+    private String content;
+
+    @ApiModelProperty("附件路径 ")
+    private String url;
+
+    @ApiModelProperty("审核状态 0:待审核 1:通过 2:驳回")
+    @TableField(fill = FieldFill.INSERT)
+    private Integer auditStatus;
+
+    @ApiModelProperty("创建时间")
+    @TableField(fill = FieldFill.INSERT)
+    private LocalDateTime createTime;
+
+    @ApiModelProperty("审核时间")
+    @TableField(fill = FieldFill.UPDATE)
+    private LocalDateTime auditTime;
+
+    @ApiModelProperty("审核员id")
+    @TableField(fill = FieldFill.UPDATE)
+    private Long aid;
+
+    @ApiModelProperty("教师备注")
+    private String teacherRemark;
+
+    @ApiModelProperty("审核员备注")
+    private String auditorRemark;
+
+    @ApiModelProperty("是否展示 0:不展示 1:展示")
+    @TableField(fill = FieldFill.INSERT)
+    private Integer isShow;
+
+    @ApiModelProperty("删除角色")
+    @TableField(fill = FieldFill.INSERT)
+    private String deleteRoles;
+
+    @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
+    @TableLogic
+    private Integer deleted;
+
+    @ApiModelProperty("test1")
+    private String test1;
+
+    @ApiModelProperty("test2")
+    private String test2;
+
+    @ApiModelProperty("test3")
+    private String test3;
+
+    @ApiModelProperty("test4")
+    private String test4;
+}

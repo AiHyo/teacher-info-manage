@@ -3,7 +3,8 @@ package com.aih.service.impl;
 import com.aih.common.exception.CustomException;
 import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.*;
-import com.aih.entity.vo.audit.TopicDto;
+import com.aih.entity.audit.TopicAudit;
+import com.aih.entity.vo.auditvo.TopicVo;
 import com.aih.mapper.*;
 import com.aih.service.ITopicAuditService;
 import com.aih.utils.MyUtil;
@@ -49,7 +50,7 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
 
 
     @Override
-    public TopicDto queryDtoById(Long id) {
+    public TopicVo queryDtoById(Long id) {
         TopicAudit findData = this.baseMapper.selectById(id);
         if (findData == null){
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
@@ -59,7 +60,7 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
         if (!powerIds.contains(UserInfoContext.getUser().getId())){
             throw new CustomException(CustomExceptionCodeMsg.NO_POWER_QUERY);
         }
-        TopicDto dto = this.getDto(findData);
+        TopicVo dto = this.getDto(findData);
         return dto;
     }
 
@@ -77,9 +78,9 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
     }
 
     @Override
-    public Page<TopicDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
+    public Page<TopicVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword) {
         Page<TopicAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<TopicDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<TopicVo> dtoPageInfo = new Page<>(pageNum, pageSize);
 
         Long uid = UserInfoContext.getUser().getId();
         LambdaQueryWrapper<TopicAudit> queryWrapper = Wrappers.lambdaQuery();
@@ -88,15 +89,13 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
                 .like((StringUtils.isNotBlank(keyword)), TopicAudit::getTopicName, keyword)//模糊查询
                 .orderByAsc(auditStatus==null, TopicAudit::getAuditStatus)//先按审核状态升序 未审核=>通过=>未通过
                 .orderByDesc(TopicAudit::getCreateTime);//再按创建时间倒序
-        if (auditStatus != null && auditStatus != 0){
-            queryWrapper.and( wrapper -> wrapper
-                    .notLike(TopicAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(TopicAudit::getDeleteRoles));
-        }
+        queryWrapper.and(wrapper -> wrapper
+                .notLike(TopicAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(TopicAudit::getDeleteRoles));
         this.baseMapper.selectPage(pageInfo,queryWrapper);
         //遍历每一条records(当前页下的所有数据)
-        List<TopicDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            TopicDto dto = this.getDto(item);
+        List<TopicVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            TopicVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
         BeanUtils.copyProperties(pageInfo, dtoPageInfo, "records");//拷贝除了records的属性
@@ -105,9 +104,9 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
     }
 
     @Override
-    public Page<TopicDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
+    public Page<TopicVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword) {
         Page<TopicAudit> pageInfo = new Page<>(pageNum, pageSize);
-        Page<TopicDto> dtoPageInfo = new Page<>(pageNum, pageSize);
+        Page<TopicVo> dtoPageInfo = new Page<>(pageNum, pageSize);
         //getCanAuditTidsByOid 根据oid查询有权利审核的
         List<Long> queryTids = null;
         if (UserInfoContext.getUser().getRoleType() == RoleType.AUDITOR){
@@ -129,17 +128,15 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
                 .orderByAsc(auditStatus==null, TopicAudit::getAuditStatus)
                 .orderByDesc(TopicAudit::getCreateTime);//审核状态相同的则按创建时间越晚的显示在最前
         // 删除过记录的情况：需要判断删除角色
-        if (auditStatus != null && auditStatus != 0){
-            Long uid = UserInfoContext.getUser().getId();
-            queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
-                    .notLike(TopicAudit::getDeleteRoles, "," + uid + ",")
-                    .or().isNull(TopicAudit::getDeleteRoles));
-        }
-//        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
+        Long uid = UserInfoContext.getUser().getId();
+        queryWrapper.and( wrapper -> wrapper //选出没有在删除角色中的 如果是未审核的,不允许有删除角色
+                .notLike(TopicAudit::getDeleteRoles, "," + uid + ",")
+                .or().isNull(TopicAudit::getDeleteRoles));
+        //        queryWrapper.apply("academic_paper_audit.create_time <= teacher.create_date");
         this.baseMapper.selectPage(pageInfo, queryWrapper); //
         //遍历每一条records(当前页下的所有数据)
-        List<TopicDto> collect = pageInfo.getRecords().stream().map((item) -> {
-            TopicDto dto = this.getDto(item);
+        List<TopicVo> collect = pageInfo.getRecords().stream().map((item) -> {
+            TopicVo dto = this.getDto(item);
             return dto;
         }).collect(Collectors.toList());
 
@@ -212,8 +209,9 @@ public class TopicAuditServiceImpl extends ServiceImpl<TopicAuditMapper, TopicAu
     }
 
     //Dto转换
-    private TopicDto getDto(TopicAudit project){
-        TopicDto dto = new TopicDto();
+    @Override
+    public TopicVo getDto(TopicAudit project){
+        TopicVo dto = new TopicVo();
         BeanUtils.copyProperties(project, dto);//将projectAudit的属性拷贝到dto中
         Long tid = project.getTid(); //获取tid,找到对应教师
         Long aid = project.getAid(); //获取aid,找到对应审核者id

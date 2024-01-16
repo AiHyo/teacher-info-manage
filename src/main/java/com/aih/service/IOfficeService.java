@@ -1,9 +1,11 @@
 package com.aih.service;
 
 import com.aih.entity.Office;
-import com.aih.entity.vo.OfficeDto;
+import com.aih.entity.vo.OfficeVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
+
+import java.util.List;
 
 /**
  * <p>
@@ -15,9 +17,13 @@ import com.baomidou.mybatisplus.extension.service.IService;
  */
 
 public interface IOfficeService extends IService<Office> {
-    Page<OfficeDto> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName);
+    Page<OfficeVo> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName);
 
-    Page<OfficeDto> getAllOffice(Integer pageNum, Integer pageSize, String officeName);
+    Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName);
 
     Long getOidByName(String officeName);
+
+    String getOfficeNameByOid(Long id);
+
+    List<Office> getOfficeListByCid(Long cid);
 }

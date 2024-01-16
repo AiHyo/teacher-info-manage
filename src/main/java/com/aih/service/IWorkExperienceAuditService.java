@@ -1,11 +1,9 @@
 package com.aih.service;
 
-import com.aih.entity.WorkExperienceAudit;
-import com.aih.entity.vo.audit.WorkExperienceDto;
+import com.aih.entity.audit.WorkExperienceAudit;
+import com.aih.entity.vo.auditvo.WorkExperienceVo;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
-
-import java.util.List;
 
 /**
  * <p>
@@ -20,13 +18,15 @@ public interface IWorkExperienceAuditService extends IService<WorkExperienceAudi
 
     void rejectWorkExperienceAudit(WorkExperienceAudit academicPaper);
 
-    Page<WorkExperienceDto> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
+    Page<WorkExperienceVo> queryOwnRecord(Integer pageNum, Integer pageSize, Integer auditStatus, String keyword);
 
-    Page<WorkExperienceDto> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
+    Page<WorkExperienceVo> queryPowerRecords(Integer pageNum, Integer pageSize, Integer auditStatus, Boolean onlyOwn, String keyword);
 
     void deleteOwnInfo(Long id);
 
     String deleteRecord(Long id);
 
-    WorkExperienceDto queryDtoById(Long id);
+    WorkExperienceVo queryDtoById(Long id);
+
+    WorkExperienceVo getDto(WorkExperienceAudit audit);
 }
