@@ -11,14 +11,16 @@ import java.time.LocalDate;
 public class SoftwareWordTable {
     private String softwareName;
     private String stage;
-    private Integer status;
+    private String  status;
     private LocalDate completionDate;
     private Integer teamSize;
 
     public SoftwareWordTable(SoftwareAudit audit){
         this.softwareName = audit.getSoftwareName();
         this.stage = audit.getStage();
-        this.status = audit.getStatus();
+        if (audit.getStatus() != null) {
+            this.status = audit.getStatus()==1?"已发表":"未发表";
+        }else this.status = "未发表";
         this.completionDate = audit.getCompletionDate();
         this.teamSize = audit.getTeamSize();
     }

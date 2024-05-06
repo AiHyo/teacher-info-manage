@@ -19,11 +19,15 @@ import java.util.List;
 public interface IOfficeService extends IService<Office> {
     Page<OfficeVo> getOfficeByCollege(Integer pageNum, Integer pageSize, String officeName);
 
-    Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName);
+    Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName, Long cid);
 
     Long getOidByName(String officeName);
 
     String getOfficeNameByOid(Long id);
 
     List<Office> getOfficeListByCid(Long cid);
+
+    Long getCidById(Long oid);
+
+    Long getOidByNameAndCid(String officeName, Long cid);
 }

@@ -6,4 +6,6 @@ import lombok.Data;
 public class TeacherExcelReaderByAdmin {
     String phone;
     String officeName;
+    Long deskId;
+    String teacherName;
 }

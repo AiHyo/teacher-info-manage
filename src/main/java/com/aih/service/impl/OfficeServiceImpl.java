@@ -11,6 +11,7 @@ import com.aih.utils.UserInfoContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.google.common.base.Equivalence;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -56,11 +57,13 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
     }
 
     @Override
-    public Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName) {
+    public Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName, Long cid) {
         Page<Office> pageInfo = new Page<>(pageNum,pageSize);
         LambdaQueryWrapper<Office> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(cid!=null,Office::getCid,cid);
         queryWrapper.orderByAsc(Office::getCid); //根据学院id排序
         queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
+        queryWrapper.ne(Office::getId, 0L); //排除id为0的数据
         this.baseMapper.selectPage(pageInfo, queryWrapper);
         //Dto处理
         List<OfficeVo> collect = pageInfo.getRecords().stream().map((item) -> {
@@ -91,5 +94,15 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
     @Override
     public List<Office> getOfficeListByCid(Long cid) {
         return this.baseMapper.getOfficeListByCid(cid);
+    }
+
+    @Override
+    public Long getCidById(Long oid) {
+        return this.baseMapper.getCidById(oid);
+    }
+
+    @Override
+    public Long getOidByNameAndCid(String officeName, Long cid) {
+        return this.baseMapper.getOidByNameAndCid(officeName,cid);
     }
 }

@@ -12,6 +12,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class TeacherExcelModel {
     private Long id;
+    private String deskId;
     private String teacherName;
     private String username;
     private String gender;
@@ -32,6 +33,8 @@ public class TeacherExcelModel {
     //传入Teacher的创建实体类的方法
     public TeacherExcelModel(Teacher teacher){
         this.id = teacher.getId();
+        Long deskId1 = teacher.getDeskId();
+        this.deskId = deskId1==null?"":deskId1.toString();
         this.teacherName = teacher.getTeacherName();
         this.username = teacher.getUsername();
         if (teacher.getGender()!=null){

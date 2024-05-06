@@ -108,6 +108,7 @@ public class ExportController {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
         }
         //获取XWPFTemplate word写入器 渲染好数据的word
+        log.info("=====================准备进入getWordRenderByTid获取XWPFTemplate====================");
         XWPFTemplate render = teacherService.getWordRenderByTid(tid);
         //在浏览器下载：设置response并写出docx
         String fileName = URLEncoder.encode(findTeacher.getTeacherName() + "教师信息表", "UTF-8");

@@ -18,9 +18,9 @@ import java.util.List;
 @Mapper
 public interface AdminMapper extends BaseMapper<Admin> {
 
-    @Select("select id from admin where cid = #{cid} and deleted = 0")
+    @Select("select zw_id from admin where zw_cid = #{cid} and zw_deleted = 0")
     List<Long> getAdminIdsByCid(Long cid);
 
-    @Select("select admin_name from admin where id = #{aid} and deleted = 0")
+    @Select("select zw_admin_name from admin where zw_id = #{aid} and zw_deleted = 0")
     String getAdminNameByAid(Long aid);
 }

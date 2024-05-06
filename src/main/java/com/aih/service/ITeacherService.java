@@ -52,4 +52,6 @@ public interface ITeacherService extends IService<Teacher> {
     List<Map<String, Object>> getTeacherCountByCollege();
 
     boolean checkUsernameExist(String username);
+
+    boolean checkDeskIdExist(Long deskId);
 }

@@ -1,6 +1,7 @@
 package com.aih.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
 
@@ -24,17 +25,20 @@ public class Office implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty("教研室id")
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "zw_id", type = IdType.AUTO)
     private Long id;
 
     @ApiModelProperty("教研室名称")
+    @TableField("zw_office_name")
     private String officeName;
 
     @ApiModelProperty("所属学院id")
+    @TableField("zw_cid")
     private Long cid;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic
+    @TableField("zw_deleted")
     private Integer deleted;
 
     @ApiModelProperty("test1")

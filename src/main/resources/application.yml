@@ -15,7 +15,7 @@ mybatis-plus:
   global-config:
     db-config:
       # 逻辑删除配置
-      logic-delete-field: deleted
+      logic-delete-field: zw_deleted
       logic-not-delete-value: 0
       logic-delete-value: 1
       id-type: auto
@@ -24,5 +24,10 @@ mybatis-plus:
 excel:
   file-name: 教师信息表
   import-template-name: 导入教师账号模板
+
+file:
+  template-file-word: template/TemplateTeacherInfo.docx  # word模板文件
+  template-file-excel-superadmin: template/SuperAdminImport.xlsx # excel模板文件
+  template-file-excel-admin: template/AdminImport.xlsx # excel模板文件
 
 default-password: 123456

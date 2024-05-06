@@ -11,7 +11,6 @@ import com.aih.entity.vo.*;
 import com.aih.entity.vo.auditvo.*;
 import com.aih.entity.vo.export.excel.TeacherExcelModel;
 import com.aih.entity.vo.export.word.TeacherWordModel;
-import com.aih.entity.vo.export.word.table.*;
 import com.aih.service.*;
 import com.aih.utils.MyUtil;
 import com.aih.utils.UserInfoContext;
@@ -32,6 +31,7 @@ import org.apache.poi.ss.util.SheetUtil;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.ResourceUtils;
@@ -39,6 +39,7 @@ import org.springframework.util.ResourceUtils;
 import javax.annotation.Resource;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -116,6 +117,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             HashMap<String, Object> data = new HashMap<>();
             data.put("token",token);
             data.put("isDefault",teacher.getPassword().equals(defaultPassword));//是否为默认密码
+            data.put("officeName",officeMapper.getOfficeNameByOid(loginTeacher.getOid()));
             data.put("teacherName",loginTeacher.getTeacherName());
             return data;
         }
@@ -163,7 +165,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         Page<Teacher> pageInfo = new Page<>(pageNum, pageSize);
         Long oid = UserInfoContext.getUser().getOid();
         LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
-        queryWrapper.eq(Teacher::getOid,oid);//对应办公室下的所有
+        queryWrapper.eq(Teacher::getOid,oid); //对应办公室下的所有
         queryWrapper.ne(Teacher::getId, UserInfoContext.getUser().getId());//排除id为自己的
         queryWrapper.like(StringUtils.isNotBlank(teacherName),Teacher::getTeacherName,teacherName);
         queryWrapper.eq(gender != null,Teacher::getGender,gender);
@@ -423,6 +425,22 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             return dto;
         })).collect(Collectors.toList());
         all_auditInfoVoList.addAll(seven_auditInfoVoList);
+        // 按AuditStatus按待审核,审核通过,审核未通过,三种状态排序 && 按时间排序
+        all_auditInfoVoList.sort((x, y) -> {
+            if (x.getAuditStatus().equals(y.getAuditStatus())) { // 如果审核状态相同，按时间排序
+                return y.getCreateTime().compareTo(x.getCreateTime());
+            } else {
+                if (x.getAuditStatus().equals("待审核")) { // 如果x的审核状态是"待审核"，则返回-1（即x排在前面）
+                    return -1;
+                } else if (y.getAuditStatus().equals("待审核")) { // 如果y的审核状态是"待审核"，则返回1（即y排在前面）
+                    return 1;
+                } else if (x.getAuditStatus().equals("审核通过")) { //如果都不是待审核状态,则按审核通过,审核未通过排序
+                    return -1;
+                } else {
+                    return 1;
+                }
+            }
+        });
         return all_auditInfoVoList;
     }
 
@@ -445,6 +463,13 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         return this.baseMapper.selectCount(queryWrapper) > 0;
     }
 
+    @Override
+    public boolean checkDeskIdExist(Long deskId) {
+        LambdaQueryWrapper<Teacher> queryWrapper = new LambdaQueryWrapper<>();
+        queryWrapper.eq(Teacher::getDeskId, deskId);
+        return this.baseMapper.selectCount(queryWrapper) > 0;
+    }
+
 
     @Override
     public List<String> getRoleListByTid(Long id) {
@@ -454,6 +479,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
     @Override
     public XWPFTemplate getWordRenderByTid(Long tid) throws IOException {
         //获取数据
+        log.info("进入getWordRenderByTid方法, tid={}=============================", tid);
         TeacherWordModel wordModel = new TeacherWordModel(this.queryTeacherDetailDtoByTid(tid));
         Map<String, Object> map = new HashMap<>();
         map.put("teacherName", wordModel.getTeacherName());
@@ -487,8 +513,13 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         map.put("topicList", wordModel.getTopicList());
         map.put("academicPaperList", wordModel.getAcademicPaperList());
         //读取模板内容
-        File templateFile = ResourceUtils.getFile(this.wordTemplateFile);
-        XWPFTemplate compile = XWPFTemplate.compile(templateFile,config);
+        log.info("=================准备读入模板内容=====================");
+//        File templateFile = ResourceUtils.getFile(this.wordTemplateFile); //classpath:的写法
+        ClassPathResource classPathResource = new ClassPathResource(this.wordTemplateFile);
+        InputStream inputStream = classPathResource.getInputStream();
+
+//        XWPFTemplate compile = XWPFTemplate.compile(templateFile,config);
+        XWPFTemplate compile = XWPFTemplate.compile(inputStream,config);
         //渲染数据到模板
         return compile.render(map);
     }
@@ -519,6 +550,10 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
         if (fieldList != null && !fieldList.isEmpty()) {
             if (fieldList.contains("id")) {
                 writer.addHeaderAlias("id", "教师id");
+                count += 1;
+            }
+            if (fieldList.contains("deskId")) {
+                writer.addHeaderAlias("deskId", "工位号");
                 count += 1;
             }
             if (fieldList.contains("teacherName")) {
@@ -583,6 +618,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             writer.merge(count - 1, fileName);//合并标题
         } else {
             writer.addHeaderAlias("id", "教师id");
+            writer.addHeaderAlias("deskId", "工位号");
             writer.addHeaderAlias("teacherName", "教师姓名");
             writer.addHeaderAlias("username", "登录账号");
             writer.addHeaderAlias("gender", "性别");
@@ -597,7 +633,7 @@ public class TeacherServiceImpl extends ServiceImpl<TeacherMapper, Teacher> impl
             writer.addHeaderAlias("officeName", "教研室");
             writer.addHeaderAlias("isAuditor", "审核员");
             writer.addHeaderAlias("startDate", "入校日期");
-            writer.merge(14, fileName);
+            writer.merge(15, fileName);
         }
         log.info("teacherExcelList={}", teacherExcelModelList);
         //只写出加了别名的字段

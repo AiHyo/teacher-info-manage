@@ -12,7 +12,7 @@ ip: 47.113.150.138
 # 文件存储路径
 file:
   root-path: /www/wwwroot/TeacherInfoManage/files
-  template-file-word: /www/wwwroot/TeacherInfoManage/files/template/TemplateTeacherInfo.docx
-  template-file-excel-superadmin: /www/wwwroot/TeacherInfoManage/files/template/superadmin/导入教师账号模板.xlsx # excel模板文件
-  template-file-excel-admin: /www/wwwroot/TeacherInfoManage/files/template/admin/导入教师账号模板.xlsx # excel模板文件
   temporary-path: /www/wwwroot/TeacherInfoManage/files/temporary
+#  template-file-word: /www/wwwroot/TeacherInfoManage/files/template/TemplateTeacherInfo.docx
+#  template-file-excel-superadmin: /www/wwwroot/TeacherInfoManage/files/template/SuperadminImport.xlsx # excel模板文件
+#  template-file-excel-admin: /www/wwwroot/TeacherInfoManage/files/template/AdminImport.xlsx # excel模板文件

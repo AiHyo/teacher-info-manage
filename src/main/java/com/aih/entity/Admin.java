@@ -28,31 +28,36 @@ public class Admin implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty("管理员id")
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "zw_id", type = IdType.AUTO)
     private Long id;
 
     @ApiModelProperty("管理员名称")
+    @TableField("zw_admin_name")
     private String adminName;
 
     @ApiModelProperty("登录账号")
+    @TableField("zw_username")
     private String username;
 
     @ApiModelProperty("登录密码")
+    @TableField("zw_password")
     private String password;
 
     @ApiModelProperty("所属学院id")
+    @TableField("zw_cid")
     private Long cid;
 
     @ApiModelProperty("生效日期")
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(fill = FieldFill.INSERT, value = "zw_create_date")
     private LocalDate createDate;
 
     @ApiModelProperty("是否启用 1:启用 0:禁用")
-    @TableField(fill = FieldFill.INSERT)
+    @TableField(fill = FieldFill.INSERT, value = "zw_status")
     private Integer status;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic
+    @TableField("zw_deleted")
     private Integer deleted;
 
     @ApiModelProperty("test1")

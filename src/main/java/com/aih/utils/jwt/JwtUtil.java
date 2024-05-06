@@ -15,7 +15,7 @@ import java.util.UUID;
 
 @Component
 public class JwtUtil {
-    private static final long JWT_EXPIRE = 60*60*1000L; //一小时 有效期
+    private static final long JWT_EXPIRE = 12*60*60*1000L; //12小时 有效期
     private static final String JWT_KEY = "123456";     //密钥
 
     public  String createToken(Object data,String entityType){

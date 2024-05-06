@@ -13,8 +13,7 @@ ip: localhost
 # 文件存储路径
 file:
   root-path: D:\idea\2023\files   # 根路径
-  template-file-word: D:\idea\2023\files\template\TemplateTeacherInfo.docx # word模板文件
-  template-file-excel-superadmin: D:\idea\2023\files\template\superadmin\导入教师账号模板.xlsx # excel模板文件
-  template-file-excel-admin: D:\idea\2023\files\template\admin\导入教师账号模板.xlsx # excel模板文件
   temporary-path: D:\idea\2023\files\temporary  # 临时目录
-
+#  template-file-word: classpath:template/TemplateTeacherInfo.docx  # word模板文件
+#  template-file-excel-superadmin: classpath:template/SuperAdminImport.xlsx # excel模板文件
+#  template-file-excel-admin: classpath:template/AdminImport.xlsx # excel模板文件

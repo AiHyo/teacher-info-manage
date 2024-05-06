@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
          https://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
@@ -19,11 +19,52 @@
         <java.version>1.8</java.version>
     </properties>
     <build>
+<!--        <resources>-->
+<!--            <resource>-->
+<!--                <directory>src/main/java</directory>-->
+<!--                <includes>-->
+<!--                    <include>**/*.properties</include>-->
+<!--                    <include>**/*.xml</include>-->
+<!--                </includes>-->
+<!--                &lt;!&ndash;是否替换资源中的属性&ndash;&gt;-->
+<!--                <filtering>false</filtering>-->
+<!--            </resource>-->
+<!--            <resource>-->
+<!--                <directory>src/main/resources</directory>-->
+<!--                <includes>-->
+<!--                    <include>**/*.properties</include>-->
+<!--                    <include>**/*.xml</include>-->
+<!--                    <include>**/*.yml</include>-->
+<!--                    <include>**/Dockerfile</include>-->
+<!--                    <include>**/*.xlsx</include>-->
+<!--                    <include>**/*.xls</include>-->
+<!--                    <include>**/*.doc</include>-->
+<!--                    <include>**/*.docx</include>-->
+<!--                </includes>-->
+<!--                &lt;!&ndash;是否替换资源中的属性&ndash;&gt;-->
+<!--                <filtering>false</filtering>-->
+<!--            </resource>-->
+<!--        </resources>-->
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
             </plugin>
+
+<!--            <plugin>-->
+<!--                <groupId>org.apache.maven.plugins</groupId>-->
+<!--                <artifactId>maven-resources-plugin</artifactId>-->
+<!--                <configuration>-->
+<!--                    <nonFilteredFileExtensions>-->
+<!--                        <nonFilteredFileExtension>sql</nonFilteredFileExtension>-->
+<!--                        <nonFilteredFileExtension>xlsx</nonFilteredFileExtension>-->
+<!--                        <nonFilteredFileExtension>xls</nonFilteredFileExtension>-->
+<!--                        <nonFilteredFileExtension>doc</nonFilteredFileExtension>-->
+<!--                        <nonFilteredFileExtension>docx</nonFilteredFileExtension>-->
+<!--                    </nonFilteredFileExtensions>-->
+<!--                </configuration>-->
+<!--            </plugin>-->
+
             <!--<plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -137,8 +178,6 @@
             <artifactId>sa-token-spring-boot-starter</artifactId>
             <version>1.35.0.RC</version>
         </dependency>
-
-
 
 
         <!-- jackson -->

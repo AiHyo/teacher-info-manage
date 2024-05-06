@@ -157,7 +157,8 @@ public class TeacherController {
         }
         MyUtil.checkPhone(teacherDto.getPhone());//检验手机号格式
         List<Long> roleIds = teacherDto.getRids();
-        if (roleIds.isEmpty()){
+        //判断roleIds不为空
+        if (roleIds!=null && !roleIds.isEmpty()){
             roleService.updateTeacherRole(tid,roleIds);
         }
         Teacher teacher = new Teacher();

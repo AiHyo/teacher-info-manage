@@ -3,9 +3,9 @@
 <mapper namespace="com.aih.mapper.TeacherMapper">
 
     <select id="getRoleNameByTeacherId" parameterType="Long" resultType="String">
-        select role.role_name
+        select role.zw_role_name
         from teacher_role, role
-        where teacher_role.rid = role.id and teacher_role.tid = #{tid}
+        where teacher_role.zw_rid = role.zw_id and teacher_role.zw_tid = #{tid}
     </select>
 
 </mapper>

@@ -1,6 +1,7 @@
 package com.aih.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import java.io.Serializable;
 
@@ -25,14 +26,16 @@ public class College implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty("学院id")
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "zw_id", type = IdType.AUTO)
     private Long id;
 
     @ApiModelProperty("学院名称")
+    @TableField("zw_college_name")
     private String collegeName;
 
     @ApiModelProperty("逻辑删除 0:未删除 1:已删除")
     @TableLogic
+    @TableField("zw_deleted")
     private Integer deleted;
 
     @ApiModelProperty("备用1")

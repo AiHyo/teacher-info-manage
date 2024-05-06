@@ -16,6 +16,6 @@ import java.util.List;
  */
 public interface RoleMapper extends BaseMapper<Role> {
 
-    @Select("select * from role where id in (#{rids})")
+    @Select("select * from role where zw_id in (#{rids})")
     List<Role> selectByRids(List<Long> rids);
 }

@@ -163,8 +163,9 @@ public class AdminController {
             }
         }
         MyUtil.checkPhone(teacherDto.getPhone());//检验手机号格式
+        MyUtil.checkPoliticsStatus(teacherDto.getPoliticsStatus());//检验politics_status是否合法
         List<Long> roleIds = teacherDto.getRids();
-        if (!roleIds.isEmpty()){
+        if (roleIds!=null&&!roleIds.isEmpty()){
             roleService.updateTeacherRole(tid,roleIds);
         }
         Teacher teacher = new Teacher();

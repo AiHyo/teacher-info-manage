@@ -6,7 +6,6 @@ import com.aih.common.exception.CustomExceptionCodeMsg;
 import com.aih.entity.Role;
 import com.aih.entity.Teacher;
 import com.aih.entity.TeacherRole;
-import com.aih.mapper.RoleMapper;
 import com.aih.mapper.TeacherRoleMapper;
 import com.aih.service.IRoleService;
 import com.aih.service.ITeacherService;

@@ -28,7 +28,8 @@ public class OfficeController {
     @ApiOperation(value = "获取所有办公室")
     @GetMapping("/getAllOffice")
     public R<Page<OfficeVo>> getAllOffice(@RequestParam("pageNum") Integer pageNum, @RequestParam("pageSize") Integer pageSize,
-                                          @RequestParam(value = "officeName",required = false) String officeName){
-        return R.success(officeService.getAllOffice(pageNum,pageSize,officeName));
+                                          @RequestParam(value = "officeName",required = false) String officeName,
+                                          @RequestParam(value = "cid", required = false)Long cid){
+        return R.success(officeService.getAllOffice(pageNum,pageSize,officeName,cid));
     }
 }

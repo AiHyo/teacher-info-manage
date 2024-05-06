@@ -10,6 +10,7 @@ import com.aih.mapper.AdminMapper;
 import com.aih.mapper.CollegeMapper;
 import com.aih.mapper.OfficeMapper;
 import com.aih.mapper.TeacherMapper;
+import com.aih.utils.vo.PoliticsStatus;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -33,6 +34,17 @@ public class MyUtil {
     private CollegeMapper collegeMapper;
     @Resource
     private OfficeMapper officeMapper;
+
+    public static void checkPoliticsStatus(String politicsStatus) {
+        if (politicsStatus==null){
+            return;
+        }
+        try {
+            PoliticsStatus.valueOf(politicsStatus);
+        } catch (IllegalArgumentException e) {
+            throw new CustomException(CustomExceptionCodeMsg.POLITICS_STATUS_ILLEGAL);
+        }
+    }
 
     /**
      * 获取审核员有权利 审核 的tids
@@ -141,6 +153,9 @@ public class MyUtil {
      *  检查auditStatus参数是否合法
      */
     public static void checkAuditStatus(Integer auditStatus){
+        if (auditStatus==null){
+            throw new CustomException(CustomExceptionCodeMsg.AUDIT_STATUS_ILLEGAL);
+        }
         if (auditStatus != 0 && auditStatus != 1 && auditStatus != 2){
             throw new CustomException(CustomExceptionCodeMsg.AUDIT_STATUS_ILLEGAL);
         }

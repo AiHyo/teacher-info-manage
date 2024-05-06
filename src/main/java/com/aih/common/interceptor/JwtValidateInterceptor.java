@@ -66,6 +66,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
             RoleType entityType = UserInfoContext.getUser().getRoleType();
             if (handlerMethod.getBeanType().equals(TeacherController.class)) {
                 log.info("在执行TeacherController中的方法");
+                log.info("entityType:{}",entityType);
                 if (entityType != RoleType.TEACHER && entityType != RoleType.AUDITOR){
                     throw new CustomException(CustomExceptionCodeMsg.USER_IS_NOT_TEACHER);
                 }
@@ -91,7 +92,7 @@ public class JwtValidateInterceptor implements HandlerInterceptor {
             String entityType = (String) claims.get("entityType");
             User user = new User(); // 创建一个User实例
 //            user.setEntityType(entityType);
-            log.debug("================================entityType{}",entityType);
+            log.info("================================entityType{}",entityType);
             switch (entityType) {
                 case "Teacher":
                     Teacher t_teacher = jwtUtil.parseToken(token, Teacher.class);

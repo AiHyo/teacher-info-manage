@@ -20,18 +20,18 @@ import java.util.List;
 public interface TeacherMapper extends BaseMapper<Teacher> {
     List<String> getRoleNameByTeacherId(Long tid);
 
-    @Select("select id from teacher where oid = #{oid}")
+    @Select("select zw_id from teacher where zw_oid = #{oid}")
     List<Long> getTeacherIdsByOid(Long oid);
 
-    @Select("select id from teacher where oid = #{oid} and is_auditor = 1")
+    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_is_auditor = 1")
     List<Long> getAuditorPowerIdsByOid(Long oid);
 
-    @Select("select id from teacher where oid = #{oid} and is_auditor = 0")
+    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_is_auditor = 0")
     List<Long> getCanAuditTidsByOid(Long oid);
 
-    @Select("select id from teacher where cid = #{cid} and is_auditor = 1")
+    @Select("select zw_id from teacher where zw_cid = #{cid} and zw_is_auditor = 1")
     List<Long> getCanAuditTidsByCid(Long cid);
 
-    @Select("select teacher_name from teacher where id = #{tid}")
+    @Select("select zw_teacher_name from teacher where zw_id = #{tid}")
     String getTeacherNameByTid(Long tid);
 }

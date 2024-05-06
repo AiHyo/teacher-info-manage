@@ -1,9 +1,7 @@
 package com.aih.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+
 import java.io.Serializable;
 import io.swagger.annotations.ApiModel;
 import io.swagger.annotations.ApiModelProperty;
@@ -25,13 +23,15 @@ public class TeacherRole implements Serializable {
     private static final long serialVersionUID = 1L;
 
     @ApiModelProperty("角色_职务_关系id")
-    @TableId(value = "id", type = IdType.AUTO)
+    @TableId(value = "zw_id", type = IdType.AUTO)
     private Long id;
 
     @ApiModelProperty("教师id")
+    @TableField("zw_tid")
     private Long tid;
 
     @ApiModelProperty("职务id")
+    @TableField("zw_rid")
     private Long rid;
 
     public TeacherRole(Long tid, Long rid) {

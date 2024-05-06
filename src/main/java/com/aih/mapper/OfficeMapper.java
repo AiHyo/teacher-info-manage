@@ -17,18 +17,24 @@ import java.util.List;
  */
 @Mapper
 public interface OfficeMapper extends BaseMapper<Office> {
-    @Select("select office_name from office where id = #{id} and deleted = 0")
+    @Select("select zw_office_name from office where zw_id = #{id} and zw_deleted = 0")
     String getOfficeNameByOid(Long id);
 
     @Select("<script>" +
-                "select * from office where cid = #{cid} and deleted = 0 " +
-                "<if test='officeName!=null'> and office_name LIKE CONCAT('%', #{officeName}, '%')</if>" +
+                "select * from office where zw_cid = #{cid} and zw_deleted = 0 " +
+                "<if test='officeName!=null'> and zw_office_name LIKE CONCAT('%', #{officeName}, '%')</if>" +
             "</script>")
     List<Office> getOfficeList(Long cid, String officeName);
 
-    @Select("select id from office where office_name = #{officeName} and deleted = 0")
+    @Select("select zw_id from office where zw_office_name = #{officeName} and zw_deleted = 0")
     Long getOidByName(String officeName);
 
-    @Select("select * from office where cid = #{cid} and deleted = 0")
+    @Select("select * from office where zw_cid = #{cid} and zw_deleted = 0")
     List<Office> getOfficeListByCid(Long cid);
+
+    @Select("select zw_cid from office where zw_id = #{oid} and zw_deleted = 0")
+    Long getCidById(Long oid);
+
+    @Select("select zw_id from office where zw_office_name = #{officeName} and zw_cid = #{cid} and zw_deleted = 0")
+    Long getOidByNameAndCid(String officeName, Long cid);
 }

@@ -38,6 +38,7 @@ public enum CustomExceptionCodeMsg {
     NO_POWER_UPLOAD(1023, "权限不足,上传失败,您没有权限上传该信息"),
 
     ID_IS_NULL(1040, "id不能为空"),
+    ISAUDITOR_IS_NULL(1040, "isauditor不能为空,请联系管理员"),
     ID_NOT_EXIST(1041, "id不存在,未找到对应数据"),
     OLD_PASSWORD_ERROR(1050, "原密码输入错误"),
     STATUS_ILLEGAL(1060, "status参数非法,只能允许0或者1"),
@@ -68,14 +69,13 @@ public enum CustomExceptionCodeMsg {
     AUDIT_ERROR_NOT_UNAUDIT(1083, "操作失败,该申请已经审核过了"),
     //账号已存在
     PHONE_EXIST(1090,"该手机号已经存在"),
-    OFFICE_NAME_EXIST(1091, "该部门已存在"),
+    OFFICE_NAME_EXIST(1091, "该办公室已存在"),
     USERNAME_EXIST(1092, "该用户名已存在"),
     COLLEGE_NAME_EXIST(1093, "该学院已存在"),
     ROLE_NAME_EXIST(1094, "职务已存在"),
-    PHONE_FORMAT_ERROR(1095, "手机号格式错误"), PHONE_IS_EMPTY(1020, "手机号不能为空");
-
-
-
+    PHONE_FORMAT_ERROR(1095, "手机号格式错误"),
+    PHONE_IS_EMPTY(1096, "手机号不能为空"),
+    POLITICS_STATUS_ILLEGAL(1097, "请选择正确的政治面貌");
 
 
     private Integer code;

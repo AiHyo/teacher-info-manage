@@ -184,6 +184,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             requestCollegeChangeVo.setNewAdminName(this.baseMapper.getAdminNameByAid(item.getNewAid()));
             return requestCollegeChangeVo;
         })).collect(Collectors.toList());
+        // 根据状态排序，再根据申请时间排序
+        collect.sort((x, y) -> {
+            if (x.getAuditStatus().equals(y.getAuditStatus())) {
+                return y.getCreateTime().compareTo(x.getCreateTime());
+            }
+            return x.getAuditStatus().compareTo(y.getAuditStatus());
+        });
         Page<RequestCollegeChangeVo> dtoPage = new Page<>(pageNum, pageSize);
         BeanUtils.copyProperties(page,dtoPage,"records");
         dtoPage.setRecords(collect);
@@ -214,6 +221,13 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
             dto.setNewAdminName(this.baseMapper.getAdminNameByAid(item.getNewAid()));
             return dto;
         })).collect(Collectors.toList());
+        // 根据状态排序，再根据申请时间排序
+        collect.sort((x, y) -> {
+            if (x.getAuditStatus().equals(y.getAuditStatus())) {
+                return y.getCreateTime().compareTo(x.getCreateTime());
+            }
+            return x.getAuditStatus().compareTo(y.getAuditStatus());
+        });
         Page<RequestCollegeChangeVo> dtoPage = new Page<>(pageNum, pageSize);
         BeanUtils.copyProperties(page,dtoPage,"records");
         dtoPage.setRecords(collect);
@@ -350,9 +364,11 @@ public class AdminServiceImpl extends ServiceImpl<AdminMapper, Admin> implements
         }
         if (StrUtil.isNotBlank(officeName)) {
             pageInfo.getRecords().removeIf(teacher -> !officeMapper.getOfficeNameByOid(teacher.getOid()).contains(officeName));//如果不包含officeName,就移除
+            pageInfo.setTotal(pageInfo.getRecords().size()); // 重新设置总数
         }
         if (StrUtil.isNotBlank(teacherName)) {
             pageInfo.getRecords().removeIf(teacher -> !teacher.getTeacherName().contains(teacherName));//如果不包含teacherName,就移除
+            pageInfo.setTotal(pageInfo.getRecords().size()); // 重新设置总数
         }
         List<TeacherVo> collect = pageInfo.getRecords().stream().map((item -> {
             TeacherVo teacherDto = new TeacherVo();

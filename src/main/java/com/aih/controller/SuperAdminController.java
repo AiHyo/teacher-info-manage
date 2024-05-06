@@ -155,6 +155,28 @@ public class SuperAdminController {
     }
 
     /**
+     * cid非法 抛出自定义异常。id不存在,抛出自定义异常
+     * @param admin 管理员信息
+     */
+    @ApiOperation("修改管理员信息")
+    @PutMapping("/updateAdmin")
+    public R<?> updateAdmin(@RequestBody Admin admin){
+        //判断cid是否合法
+        LambdaQueryWrapper<College> queryWrapper_cid = new LambdaQueryWrapper<>();
+        queryWrapper_cid.eq(College::getId,admin.getCid());
+        long count_cid = collegeService.count(queryWrapper_cid);
+        if (count_cid!=1) {
+            throw new CustomException(CustomExceptionCodeMsg.CID_ILLEGAL);
+        }
+        //判断id是否存在
+        if (adminService.getById(admin.getId()) == null) {
+            throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
+        }
+        adminService.updateById(admin);
+        return R.success("修改成功");
+    }
+
+    /**
      * cid/ids非法 抛出自定义异常。 权限改动了的管理员,权限生效时间createDate会被更新成当前时间
      * @param ids 管理员id列表
      * @param cid 学院id, 对应修改的权限
@@ -287,7 +309,7 @@ public class SuperAdminController {
         if (findCollege == null) {
             throw new CustomException(CustomExceptionCodeMsg.CID_ILLEGAL);
         }
-        if (officeService.getOidByName(office.getOfficeName())!=null) {
+        if (officeService.getOidByNameAndCid(office.getOfficeName(),office.getCid())!=null) {
             throw new CustomException(CustomExceptionCodeMsg.OFFICE_NAME_EXIST);
         }
         officeService.save(office);
@@ -313,7 +335,7 @@ public class SuperAdminController {
         if (count!=0) {
             throw new CustomException(CustomExceptionCodeMsg.OFFICE_DELETE_ERROR);
         }
-        collegeService.removeById(id);
+        officeService.removeById(id);
         return R.success("删除成功");
     }
 
