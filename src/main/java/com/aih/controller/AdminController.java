@@ -162,7 +162,8 @@ public class AdminController {
                 throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
             }
         }
-        MyUtil.checkPhone(teacherDto.getPhone());//检验手机号格式
+        myUtil.checkPhone(teacherDto.getPhone(), tid);//检验手机号格式/已存在
+        myUtil.checkDeskId(teacherDto.getDeskId(), tid);//检验工位号格式/已存在
         MyUtil.checkPoliticsStatus(teacherDto.getPoliticsStatus());//检验politics_status是否合法
         List<Long> roleIds = teacherDto.getRids();
         if (roleIds!=null&&!roleIds.isEmpty()){
@@ -340,13 +341,14 @@ public class AdminController {
     @ApiOperation("添加办公室")
     @PostMapping("/addOffice")
     public R<?> addOffice(@RequestParam String officeName){
-        Long oid = officeService.getOidByName(officeName);
+        Long cid = UserInfoContext.getUser().getCid();
+        Long oid = officeService.getOidByNameAndCid(officeName,cid);
         if (oid != null) {
             throw new CustomException(CustomExceptionCodeMsg.OFFICE_NAME_EXIST);
         }
         Office office = new Office();
         office.setOfficeName(officeName);
-        office.setCid(UserInfoContext.getUser().getCid());
+        office.setCid(cid);
         officeService.save(office);
         return R.success("添加成功");
     }
@@ -361,14 +363,15 @@ public class AdminController {
     @PutMapping("/updateOfficeName")
     public R<?> updateOfficeName(@RequestParam("id") Long id,
                                  @RequestParam("officeName") String officeName){
+        Long cid = UserInfoContext.getUser().getCid();
         Office findOffice = officeMapper.selectById(id);
         if (findOffice == null) {
             throw new CustomException(CustomExceptionCodeMsg.ID_NOT_EXIST);
         }
-        if (!findOffice.getCid().equals(UserInfoContext.getUser().getCid())) {
+        if (!findOffice.getCid().equals(cid)) {
             throw new CustomException(CustomExceptionCodeMsg.POWER_NOT_MATCH);
         }
-        if (officeService.getOidByName(officeName) != null) {
+        if (officeService.getOidByNameAndCid(officeName, cid) != null) {
             throw new CustomException(CustomExceptionCodeMsg.OFFICE_NAME_EXIST);
         }
         findOffice.setOfficeName(officeName);

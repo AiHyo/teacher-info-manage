@@ -11,7 +11,6 @@ import com.aih.utils.UserInfoContext;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.google.common.base.Equivalence;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -64,6 +63,7 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
         queryWrapper.orderByAsc(Office::getCid); //根据学院id排序
         queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
         queryWrapper.ne(Office::getId, 0L); //排除id为0的数据
+        queryWrapper.ne(Office::getOfficeName, "暂无隶属办公室");
         this.baseMapper.selectPage(pageInfo, queryWrapper);
         //Dto处理
         List<OfficeVo> collect = pageInfo.getRecords().stream().map((item) -> {
@@ -79,11 +79,6 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
         BeanUtils.copyProperties(pageInfo,dtoPage,"records");
         dtoPage.setRecords(collect);
         return dtoPage;
-    }
-
-    @Override
-    public Long getOidByName(String officeName) {
-        return this.baseMapper.getOidByName(officeName);
     }
 
     @Override

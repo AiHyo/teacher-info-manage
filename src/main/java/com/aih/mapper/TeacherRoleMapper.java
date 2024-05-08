@@ -17,7 +17,7 @@ import java.util.List;
  * @since 2023-07-13
  */
 public interface TeacherRoleMapper extends BaseMapper<TeacherRole> {
-    @Delete("delete from teacher_role where zw_tid = #{tid}")
+    @Delete("delete from teacher_role where zw_tid = #{tid}") //直接删不做逻辑删除
     void deleteTeacherRoleByTid(Long tid);
 
     @Select("select * from teacher_role where zw_tid = #{tid}")

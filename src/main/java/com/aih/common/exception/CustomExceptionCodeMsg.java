@@ -69,13 +69,19 @@ public enum CustomExceptionCodeMsg {
     AUDIT_ERROR_NOT_UNAUDIT(1083, "操作失败,该申请已经审核过了"),
     //账号已存在
     PHONE_EXIST(1090,"该手机号已经存在"),
+    ID_NUMBER_EXIST(1090, "身份证号已存在"),
+    DESK_ID_EXIST(1090, "工位号已存在"),
     OFFICE_NAME_EXIST(1091, "该办公室已存在"),
     USERNAME_EXIST(1092, "该用户名已存在"),
     COLLEGE_NAME_EXIST(1093, "该学院已存在"),
     ROLE_NAME_EXIST(1094, "职务已存在"),
     PHONE_FORMAT_ERROR(1095, "手机号格式错误"),
     PHONE_IS_EMPTY(1096, "手机号不能为空"),
-    POLITICS_STATUS_ILLEGAL(1097, "请选择正确的政治面貌");
+    POLITICS_STATUS_ILLEGAL(1097, "请选择正确的政治面貌"),
+    ID_NUMBER_FORMAT_ERROR(1098, "身份证号格式错误"),
+    DESK_ID_FORMAT_ERROR(1099, "工位号只能填写数字哦"),
+    ;
+
 
 
     private Integer code;

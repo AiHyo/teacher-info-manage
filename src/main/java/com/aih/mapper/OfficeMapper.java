@@ -27,7 +27,7 @@ public interface OfficeMapper extends BaseMapper<Office> {
     List<Office> getOfficeList(Long cid, String officeName);
 
     @Select("select zw_id from office where zw_office_name = #{officeName} and zw_deleted = 0")
-    Long getOidByName(String officeName);
+    Long getOidByNameAndCid(String officeName);
 
     @Select("select * from office where zw_cid = #{cid} and zw_deleted = 0")
     List<Office> getOfficeListByCid(Long cid);

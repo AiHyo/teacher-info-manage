@@ -13,6 +13,6 @@ import org.apache.ibatis.annotations.Select;
  * @since 2023-12-19
  */
 public interface RequestCollegeChangeMapper extends BaseMapper<RequestCollegeChange> {
-    @Select("select count(*) from request_college_change where zw_tid = #{tid} and zw_audit_status = 0")
+    @Select("select count(*) from request_college_change where zw_tid = #{tid} and zw_audit_status = 0 and zw_deleted = 0")
     Integer getUnAuditCountByTid(Long tid);
 }

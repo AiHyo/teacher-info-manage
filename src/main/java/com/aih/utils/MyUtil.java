@@ -21,6 +21,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.net.URLEncoder;
 import java.util.List;
+import java.util.Objects;
 
 @Slf4j
 @Component
@@ -36,7 +37,7 @@ public class MyUtil {
     private OfficeMapper officeMapper;
 
     public static void checkPoliticsStatus(String politicsStatus) {
-        if (politicsStatus==null){
+        if (StringUtils.isBlank(politicsStatus)){
             return;
         }
         try {
@@ -44,6 +45,62 @@ public class MyUtil {
         } catch (IllegalArgumentException e) {
             throw new CustomException(CustomExceptionCodeMsg.POLITICS_STATUS_ILLEGAL);
         }
+    }
+
+
+    public void checkPhone(String phone, Long tid){ //检验手机号格式是否正确
+        if(StringUtils.isBlank(phone)){
+            throw new CustomException(CustomExceptionCodeMsg.PHONE_IS_EMPTY);
+        }
+        if (!phone.matches("^1[3-9]\\d{9}$")){
+            throw new CustomException(CustomExceptionCodeMsg.PHONE_FORMAT_ERROR);
+        }
+        //是否已存在
+        List<Long> findTids = teacherMapper.getTidsByPhone(phone);
+        int size = findTids.size();
+        if (size == 0) return;
+        if (size == 1 && Objects.equals(findTids.get(0), tid)){
+            return;
+        }
+        throw new CustomException(CustomExceptionCodeMsg.PHONE_EXIST);
+
+    }
+
+    public  void checkIdNumber(String idNumber, Long tid) {
+        if (StringUtils.isBlank(idNumber)){
+            return;
+        }
+        // 18位身份证号码正则表达式
+        if (!idNumber.matches("^[1-9]\\d{16}[\\dXx]$")){
+            throw new CustomException(CustomExceptionCodeMsg.ID_NUMBER_FORMAT_ERROR);
+        }
+        //是否已存在
+        List<Long> findTids = teacherMapper.getTidsByIdNumber(idNumber);
+        int size = findTids.size();
+        if (size == 0) return;
+        if (size == 1 && Objects.equals(findTids.get(0), tid)){
+            return;
+        }
+        throw new CustomException(CustomExceptionCodeMsg.ID_NUMBER_EXIST);
+
+    }
+
+    public void checkDeskId(Long deskId, Long tid) {
+        //需要是数字,不限定长度
+        if (deskId==null){
+            return;
+        }
+        if (!deskId.toString().matches("^\\d+$")){
+            throw new CustomException(CustomExceptionCodeMsg.DESK_ID_FORMAT_ERROR);
+        }
+        // 是否已存在
+        List<Long> findTids = teacherMapper.getTidsByDeskId(deskId);
+        int size = findTids.size();
+        if (size == 0) return;
+        if (size == 1 && Objects.equals(findTids.get(0), tid)){
+            return;
+        }
+        throw new CustomException(CustomExceptionCodeMsg.DESK_ID_EXIST);
     }
 
     /**
@@ -158,16 +215,6 @@ public class MyUtil {
         }
         if (auditStatus != 0 && auditStatus != 1 && auditStatus != 2){
             throw new CustomException(CustomExceptionCodeMsg.AUDIT_STATUS_ILLEGAL);
-        }
-    }
-
-    //检验手机号格式是否正确
-    public static void checkPhone(String phone){
-        if(StringUtils.isBlank(phone)){
-            throw new CustomException(CustomExceptionCodeMsg.PHONE_IS_EMPTY);
-        }
-        if (!phone.matches("^1[3-9]\\d{9}$")){
-            throw new CustomException(CustomExceptionCodeMsg.PHONE_FORMAT_ERROR);
         }
     }
 

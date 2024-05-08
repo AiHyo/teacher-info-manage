@@ -20,18 +20,27 @@ import java.util.List;
 public interface TeacherMapper extends BaseMapper<Teacher> {
     List<String> getRoleNameByTeacherId(Long tid);
 
-    @Select("select zw_id from teacher where zw_oid = #{oid}")
+    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_deleted = 0")
     List<Long> getTeacherIdsByOid(Long oid);
 
-    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_is_auditor = 1")
+    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_is_auditor = 1 and zw_deleted = 0")
     List<Long> getAuditorPowerIdsByOid(Long oid);
 
-    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_is_auditor = 0")
+    @Select("select zw_id from teacher where zw_oid = #{oid} and zw_is_auditor = 0 and zw_deleted = 0")
     List<Long> getCanAuditTidsByOid(Long oid);
 
-    @Select("select zw_id from teacher where zw_cid = #{cid} and zw_is_auditor = 1")
+    @Select("select zw_id from teacher where zw_cid = #{cid} and zw_is_auditor = 1 and zw_deleted = 0")
     List<Long> getCanAuditTidsByCid(Long cid);
 
-    @Select("select zw_teacher_name from teacher where zw_id = #{tid}")
+    @Select("select zw_teacher_name from teacher where zw_id = #{tid} and zw_deleted = 0")
     String getTeacherNameByTid(Long tid);
+
+    @Select("select zw_id from teacher where zw_phone = #{phone} and zw_deleted = 0")
+    List<Long> getTidsByPhone(String phone);
+
+    @Select("select zw_id from teacher where zw_id_number = #{idNumber} and zw_deleted = 0")
+    List<Long> getTidsByIdNumber(String idNumber);
+
+    @Select("select zw_id from teacher where zw_desk_id = #{deskId} and zw_deleted = 0")
+    List<Long> getTidsByDeskId(Long deskId);
 }

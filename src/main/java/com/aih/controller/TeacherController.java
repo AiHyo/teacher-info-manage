@@ -49,6 +49,9 @@ public class TeacherController {
     private PasswordEncoder passwordEncoder;
     @Resource
     private HttpServletResponse response;
+    @Autowired
+    private MyUtil myUtil;
+
     @Value("${excel.file-name}")
     String defaultExcelName;
     @Value("${file.root-path}")
@@ -155,7 +158,8 @@ public class TeacherController {
         if (teacherDto.getPassword()!=null) {
             teacherDto.setPassword(passwordEncoder.encode(teacherDto.getPassword()));
         }
-        MyUtil.checkPhone(teacherDto.getPhone());//检验手机号格式
+        myUtil.checkIdNumber(teacherDto.getIdNumber(),tid);//检验身份证号格式/已存在
+        myUtil.checkPhone(teacherDto.getPhone(),tid);//检验手机号格式/已存在
         List<Long> roleIds = teacherDto.getRids();
         //判断roleIds不为空
         if (roleIds!=null && !roleIds.isEmpty()){

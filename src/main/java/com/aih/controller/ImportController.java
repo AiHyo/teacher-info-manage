@@ -1,6 +1,5 @@
 package com.aih.controller;
 
-import cn.hutool.core.io.FileUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.poi.excel.ExcelReader;
 import cn.hutool.poi.excel.ExcelUtil;
@@ -22,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.ResourceUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -189,7 +187,7 @@ public class ImportController {
                 if (StrUtil.isBlank(officeName)){ //空就默认没隶属办公室
                     officeName = officeService.getOfficeNameByOid(0L);
                 }
-                Long oid = officeService.getOidByName(officeName);
+                Long oid = officeService.getOidByNameAndCid(officeName, cid);
                 if (oid == null){
                     throw new CustomException(1093,"办公室名称"+officeName+"不存在");
                 }
@@ -241,7 +239,7 @@ public class ImportController {
                 teacher.setDeskId(deskId); //工位号
                 teacher.setTeacherName(teacherName); //教师姓名
                 teacher.setCid(collegeService.getCidByName(collegeName)); //学院id
-                Long oid = officeService.getOidByName(officeName1);
+                Long oid = officeService.getOidByNameAndCid(officeName1, cid);
                 if (oid == null){
                     throw new CustomException(1093,"办公室名称"+officeName1+"不存在");
                 }

@@ -26,6 +26,7 @@ public class CollegeServiceImpl extends ServiceImpl<CollegeMapper, College> impl
         LambdaQueryWrapper<College> queryWrapper = new LambdaQueryWrapper<>();
         queryWrapper.like(StrUtil.isNotBlank(collegeName),College::getCollegeName,collegeName);
         queryWrapper.ne(College::getId,0L);
+        queryWrapper.ne(College::getCollegeName,"无");
         return page(page,queryWrapper);
     }
 

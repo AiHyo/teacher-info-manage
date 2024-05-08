@@ -21,8 +21,6 @@ public interface IOfficeService extends IService<Office> {
 
     Page<OfficeVo> getAllOffice(Integer pageNum, Integer pageSize, String officeName, Long cid);
 
-    Long getOidByName(String officeName);
-
     String getOfficeNameByOid(Long id);
 
     List<Office> getOfficeListByCid(Long cid);
