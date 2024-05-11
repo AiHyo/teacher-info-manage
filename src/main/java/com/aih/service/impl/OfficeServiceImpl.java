@@ -63,7 +63,7 @@ public class OfficeServiceImpl extends ServiceImpl<OfficeMapper, Office> impleme
         queryWrapper.orderByAsc(Office::getCid); //根据学院id排序
         queryWrapper.like(StrUtil.isNotBlank(officeName),Office::getOfficeName,officeName); //officeName不为空时,模糊查询
         queryWrapper.ne(Office::getId, 0L); //排除id为0的数据
-        queryWrapper.ne(Office::getOfficeName, "暂无隶属办公室");
+        queryWrapper.ne(Office::getOfficeName, "暂无隶属办公室");// 排除办公室名称为"暂无隶属办公室"的数据
         this.baseMapper.selectPage(pageInfo, queryWrapper);
         //Dto处理
         List<OfficeVo> collect = pageInfo.getRecords().stream().map((item) -> {

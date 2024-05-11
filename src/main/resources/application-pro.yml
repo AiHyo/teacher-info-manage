@@ -9,10 +9,11 @@ spring:
 
 ip: 47.113.150.138
 
-# 文件存储路径
+# 附件文件在服务器的存储路径！！！
 file:
   root-path: /www/wwwroot/TeacherInfoManage/files
   temporary-path: /www/wwwroot/TeacherInfoManage/files/temporary
+
 #  template-file-word: /www/wwwroot/TeacherInfoManage/files/template/TemplateTeacherInfo.docx
 #  template-file-excel-superadmin: /www/wwwroot/TeacherInfoManage/files/template/SuperadminImport.xlsx # excel模板文件
 #  template-file-excel-admin: /www/wwwroot/TeacherInfoManage/files/template/AdminImport.xlsx # excel模板文件

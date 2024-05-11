@@ -20,14 +20,14 @@ public interface OfficeMapper extends BaseMapper<Office> {
     @Select("select zw_office_name from office where zw_id = #{id} and zw_deleted = 0")
     String getOfficeNameByOid(Long id);
 
-    @Select("<script>" +
-                "select * from office where zw_cid = #{cid} and zw_deleted = 0 " +
-                "<if test='officeName!=null'> and zw_office_name LIKE CONCAT('%', #{officeName}, '%')</if>" +
-            "</script>")
-    List<Office> getOfficeList(Long cid, String officeName);
+//    @Select("<script>" +
+//                "select * from office where zw_cid = #{cid} and zw_deleted = 0 " +
+//                "<if test='officeName!=null'> and zw_office_name LIKE CONCAT('%', #{officeName}, '%')</if>" +
+//            "</script>")
+//    List<Office> getOfficeList(Long cid, String officeName);
 
-    @Select("select zw_id from office where zw_office_name = #{officeName} and zw_deleted = 0")
-    Long getOidByNameAndCid(String officeName);
+//    @Select("select zw_id from office where zw_office_name = #{officeName} and zw_deleted = 0")
+//    Long getOidByNameAndCid(String officeName);
 
     @Select("select * from office where zw_cid = #{cid} and zw_deleted = 0")
     List<Office> getOfficeListByCid(Long cid);

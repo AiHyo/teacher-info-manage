@@ -11,7 +11,7 @@
  Target Server Version : 80019
  File Encoding         : 65001
 
- Date: 08/05/2024 16:31:14
+ Date: 11/05/2024 10:49:34
 */
 
 SET NAMES utf8mb4;
@@ -43,13 +43,13 @@ CREATE TABLE `academic_paper_audit`  (
   `test3` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test3',
   `tset4` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test4',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 139 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '论文审核' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 140 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '论文审核' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of academic_paper_audit
 -- ----------------------------
-INSERT INTO `academic_paper_audit` VALUES (1, 100001, '<论文名称1>', '<发表期刊1>', '2023-07-15', 'doidoidoidoidoi', NULL, 1, '2023-07-15 13:42:01', NULL, NULL, NULL, NULL, 0, NULL, 0, '类型1', NULL, NULL, NULL);
-INSERT INTO `academic_paper_audit` VALUES (2, 100001, '<论文名称2>', '<发表期刊2>', '2023-07-15', 'doidoidoidoidoi', NULL, 1, '2023-07-15 13:43:11', NULL, NULL, NULL, NULL, 0, NULL, 0, '类型2', NULL, NULL, NULL);
+INSERT INTO `academic_paper_audit` VALUES (1, 100001, '<论文名称1>', '<发表期刊1>', '2023-07-15', 'doidoidoidoidoi', NULL, 1, '2023-07-15 13:42:01', '2024-05-10 15:49:02', 200006, NULL, '查看了，可以', 1, NULL, 0, '类型1', NULL, NULL, NULL);
+INSERT INTO `academic_paper_audit` VALUES (2, 100001, '<论文名称2>', '<发表期刊2>', '2023-07-15', 'doidoidoidoidoi', NULL, 0, '2023-07-15 13:43:11', '2024-05-10 15:49:08', 200006, NULL, '查看了，可以的', 1, NULL, 0, '类型2', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (3, 100001, '<论文3>', '<发表期刊3>', '2023-06-15', 'doidoidoidoidoi', NULL, 0, '2023-07-15 23:42:47', NULL, NULL, '请通过我的论文审核', NULL, NULL, NULL, 0, '科研', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (4, 100001, 'consequat', 'aliquip', '2006-05-02', 'aliqua adipisicing elit labore Duis', NULL, 1, '2023-07-16 15:20:27', '2023-07-16 16:24:25', 3, 'ea minim', '看了两眼,审核通过!!', 0, NULL, 0, '语言', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (5, 100001, 'Lorem ad', NULL, '2004-05-18', 'nulla in', NULL, 0, '2023-09-13 17:19:26', NULL, NULL, NULL, 'non ipsum veniam', 0, ',', 1, 'sunt aute incididunt', NULL, 'culpa nulla consequat aliquip', 'dolor');
@@ -169,7 +169,7 @@ INSERT INTO `academic_paper_audit` VALUES (118, 100001, '', '', NULL, NULL, '', 
 INSERT INTO `academic_paper_audit` VALUES (119, 100001, '', '', NULL, NULL, '', 0, '2024-01-10 09:43:53', NULL, NULL, '', NULL, 0, ',', 1, NULL, NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (120, 100011, '测试111111', '科技大世界', '2023-12-31', 'doidoidoidoidoi', '', 0, '2024-01-10 14:52:07', NULL, NULL, '嘿嘿嘿', NULL, 0, ',', 0, '科技', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (121, 100011, '论文1222', '生物大事件', '2024-01-01', 'doidoidoidoidoi', '', 0, '2024-01-10 14:54:14', NULL, NULL, '11111', NULL, 0, ',', 0, '生物', NULL, NULL, NULL);
-INSERT INTO `academic_paper_audit` VALUES (122, 100001, '123123', '12312312312', '2024-01-09', 'doidoidoi', '', 1, '2024-01-10 19:32:52', '2024-01-11 19:00:12', 200006, '111', '同意', 0, ',', 0, '类型222', NULL, NULL, NULL);
+INSERT INTO `academic_paper_audit` VALUES (122, 100001, '123123', '12312312312', '2024-01-09', 'doidoidoi', '', 1, '2024-01-10 19:32:52', '2024-01-11 19:00:12', 200006, '111', '同意', 0, ',100001,', 0, '类型222', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (123, 100001, '123', '123123', '2024-01-10', 'doidoidoi', '', 0, '2024-01-10 20:47:56', NULL, NULL, '123', NULL, 0, ',', 1, NULL, NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (124, 100001, '213', '123', '2024-01-08', 'doidoidoi', '', 2, '2024-01-10 21:04:27', '2024-01-11 18:03:41', 200006, '123', '不给', 0, ',100001,', 0, '数学', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (125, 100001, '99999', '99999', '2024-01-03', 'doidoidoi', '', 1, '2024-01-10 21:05:21', '2024-01-11 09:49:32', 200006, '123', 'test', 0, ',100001,', 0, '语文', NULL, NULL, NULL);
@@ -186,6 +186,7 @@ INSERT INTO `academic_paper_audit` VALUES (135, 100001, '论文1', '科技', '20
 INSERT INTO `academic_paper_audit` VALUES (136, 100011, '论文1111', '测试', '2023-12-31', 'doidoidoi2', '', 1, '2024-01-11 17:42:07', '2024-01-11 17:45:31', 100001, '111111', '123', 1, ',', 0, '测试111', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (137, 100011, '论文1111', '论文类型', '2023-12-31', 'doidoidoi', '', 2, '2024-01-11 18:46:16', '2024-01-11 18:48:51', 100001, '11111', '123', 0, ',', 0, '科技', NULL, NULL, NULL);
 INSERT INTO `academic_paper_audit` VALUES (138, 100001, '科技大创新', '科技大创新', '2024-03-12', 'doidoidoi', '', 1, '2024-03-22 13:23:17', '2024-03-22 13:23:59', 200006, '希望能通过', '恭喜你已经顺利通过了', 1, ',100001,200006,', 0, '科技', NULL, NULL, NULL);
+INSERT INTO `academic_paper_audit` VALUES (139, 100001, '论文2', '3213', '2024-02-13', 'doidoidoi1', '', 0, '2024-05-11 10:02:30', NULL, NULL, '321', NULL, 0, ',', 0, '数学', NULL, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for admin
@@ -203,7 +204,7 @@ CREATE TABLE `admin`  (
   `test1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test1',
   `test2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test2',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 200016 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '管理员' ROW_FORMAT = COMPACT;
+) ENGINE = InnoDB AUTO_INCREMENT = 200038 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '管理员' ROW_FORMAT = COMPACT;
 
 -- ----------------------------
 -- Records of admin
@@ -211,15 +212,37 @@ CREATE TABLE `admin`  (
 INSERT INTO `admin` VALUES (200001, '小天管理员', 'xiaotian', '$10$3Pfm0av7Kxj4nt3OIe2oBe2jnMI13wOKyxSljqVl9JLH5K20Cn9iO', 1, '2021-10-27', 1, 1, NULL, NULL);
 INSERT INTO `admin` VALUES (200002, '小天管理员111', 'xiaotian111', '$2a$10$dbI87E1PpKxLVsU.abe11.1f9MdDyZhEe92HD8YuFNk2yz9kyPmWu', 1, '2022-11-10', 1, 1, NULL, NULL);
 INSERT INTO `admin` VALUES (200004, '王宝强', 'xiaowang', '$2a$10$YueMVzHKgFF3iQ.br75TZO/9v7DlHs1xF/m01IAZSjzBtuGuVh0di', 1, '2022-12-08', 1, 1, NULL, NULL);
-INSERT INTO `admin` VALUES (200005, '王富贵', 'xfg', '$2a$10$5Wa5OpG9XSCh60GNzDlKD.NyYw.U6w54vLHdYhyAsolyIeOMCfo8O', 2, '2023-12-21', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200005, 'XinX', 'xfg', '$2a$10$5Wa5OpG9XSCh60GNzDlKD.NyYw.U6w54vLHdYhyAsolyIeOMCfo8O', 2, '2023-12-21', 1, 0, NULL, NULL);
 INSERT INTO `admin` VALUES (200006, '小天', 'xiaotian', '$2a$10$7MAtVW/YQkBzYP1HQG1R1u3pAC/fGwmkB4no9WE65ScfZ45ZtTAOK', 1, '2022-03-01', 1, 0, NULL, NULL);
 INSERT INTO `admin` VALUES (200009, '小天', '小天', '$2a$10$sfMubyrXkByWvf2CLK3cxe.CNes6TM/WqIveoAA7HXj53etljOp46', 4, '2024-01-11', 1, 1, NULL, NULL);
 INSERT INTO `admin` VALUES (200010, '小天', '小天', '$2a$10$yYEu6YDUh3rgye6XJWb.p.gUhWcE/C2frWT9.N7rnC/rTtCPvFbrW', 4, '2024-01-11', 1, 0, NULL, NULL);
 INSERT INTO `admin` VALUES (200011, '123', '123', '$2a$10$3Pfm0av7Kxj4nt3OIe2oBe2jnMI13wOKyxSljqVl9JLH5K20Cn9iO', 1, '2024-01-11', 1, 1, NULL, NULL);
 INSERT INTO `admin` VALUES (200012, '123', '123', '$2a$10$X/jrq9mRfqJH1Rus7blVz.CKhn3lKyFi8AjN3ZPp29BvEIeNuZyt6', 2, '2024-01-11', 1, 1, NULL, NULL);
 INSERT INTO `admin` VALUES (200013, '123', '789', '$2a$10$Ueut3UsEzevVNmXUSPDz8ePG0o3ReykXgW7bY2pguRTGBV0dnN.vq', 4, '2024-04-28', 1, 1, NULL, NULL);
-INSERT INTO `admin` VALUES (200014, 'DQ', 'dianqi', '$2a$10$YB50eJaGG7gPo28MdTEEw.N0RdXunBnYelVTrn.vBH0F8cYMttFaO', 2, '2024-04-29', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200014, 'DQ', 'dianqi', '$2a$10$/nNLGz1iY/MoY8wVLSHEnurbHadA21Yr9G6KJIvS46Yw/EAYdSaVG', 2, '2024-04-29', 1, 0, NULL, NULL);
 INSERT INTO `admin` VALUES (200015, 'XinXi', 'xinxi', '$2a$10$pGYT3WHOb5pRkIaIj9pS9O2Qi1C0.SHPIUllih6WjBBKUe65R3Mny', 1, '2024-04-30', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200016, 'teste', 'test', '$2a$10$LlFvjqLvVxcNxc4OR6AMTOSXfxAYyco8YcG7U9ivgvZQxlZkrhPlS', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200017, 'tset', 'test', '$2a$10$5Y3pZgHPZnbWWCFxTzM4L.yS1xEuRiFZ69Y6.jR/oDnmEwS.rZv0K', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200018, 'test', 'test', '$2a$10$kf2m2xiZxAVTSz23nBWGyeNV8LVUsBbxTl5vGtVBsDgk00QYMtMtK', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200019, 'test', 'tett', '$2a$10$Yq/8TvMh8dgXbnFaVgY63e.okS4bPacEjWHuFq8yAI7Gv8ofdJA82', 2, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200020, 'tset', 'ttt', '$2a$10$8dCI109BHWPdG1WfPozDruIm8L2MKkLyia/zCoiqcw89/g4kGfVhC', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200021, 'test', 'test', '$2a$10$CM9XBnwAudqNlS54puSd7uMTd8OwYGYlfRAV3J0LL/9VF27tbaRDe', 2, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200022, 'X123', 'test', '$2a$10$GRRe/JshUfscZ8Fh4bC1Lu.56JVimPjeJ7CNTZSyMm5frlcUoh/uG', 1, '2024-04-03', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200023, '3', 'tttt', '$2a$10$imm8WF85Ng43B2wRY0YJo.vbdgvXBZYyZMH/NWoA5CrFYvuCV7BSS', 2, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200024, 'test', 'ttt', '$2a$10$15RPmbfg9a.VIYX9AOtW6OajkMenFA9m0B3l5mrMfHk3E9Ik8onZW', 1, '2024-05-11', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200025, 'tet', 'tet', '$2a$10$j9uWM5SnW.iIudhkzB5PvuWYDjKGGrdnSiO0s4q9Vh/hIHO1vyhqC', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200026, 'tes', 'te', '$2a$10$tuRT2W7ROECuXpfZvhhjs.DGRVd4gvQQj1x1NlKssF6Wrj4TY/fl.', 1, '2024-05-11', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200027, 'test', 'tttt', '$2a$10$sG4MT6MCFM5H/fgeyObtpeK3Vnctl/C3NIPfxWVspvRSTX20S4Jp2', 2, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200028, '11', '11', '$2a$10$Gr7p2nE8rCee75s.OT9UHOIJbCikk6Mpdi8./WttC13IE2q2gwfEC', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200029, 'qqq', 'qq', '$2a$10$FvAQtz9Np40TbUxGtxGcuexZCcYHTpW0hfT9fqtiCFUDzBOQuY31S', 4, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200030, 'aaa', 'aaa', '$2a$10$s797VntuuOZIsD1e5XLJnumrIq7qduC0s42uko7qRFwudy9gPcai6', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200031, 'ccc', 'ccc', '$2a$10$EGvD2VLepSUa4nwQCFJOYOHm2qXslbxYp09bX0.QQ20bvAQ8ty8Cm', 4, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200032, 'ww', 'ww', '$2a$10$ATVysJxyoRm/mNF19979Qud7g7OZKFiYPOkyjdO9uXN9S008DIZ72', 7, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200033, 'test', 'tttttt', '$2a$10$iv8dnpCpI4ALT6P2Tx9bkedzwcSfl/P78lBj2W1Rm0Bf9GkaT/lCe', 2, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200034, 'test', 'qqq', '$2a$10$inaK7oMUVQcXYS4zRtyPOeypDn6Cc8EF9ZzMyxL9y40NquqJPEZ9m', 1, '2024-05-11', 1, 1, NULL, NULL);
+INSERT INTO `admin` VALUES (200035, 'TEST', 'tttt', '$2a$10$L6OXFKQNKQTcumES2R2KFePG.uwLv..48eFOX5qIiSZ69akPfF6wW', 1, '2024-05-11', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200036, 'test', 'testttt', '$2a$10$vZ8p2SIqj.CV1MU/M2jrce/1bFxhXMhKsaYhLqLO2LVobP6uyF1a.', 2, '2024-05-11', 1, 0, NULL, NULL);
+INSERT INTO `admin` VALUES (200037, '123', '123', '$2a$10$E1nbKwRQP6C5uQtI6d7HTOACANfKDjc9WfOJaGlifQqGvZFv5M2B.', 1, '2024-05-11', 1, 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for college
@@ -232,7 +255,7 @@ CREATE TABLE `college`  (
   `test1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备用1',
   `test2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备用2',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 28 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '学院' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 31 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '学院' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of college
@@ -250,6 +273,9 @@ INSERT INTO `college` VALUES (11, '123', 1, NULL, NULL);
 INSERT INTO `college` VALUES (12, '信息工程', 1, NULL, NULL);
 INSERT INTO `college` VALUES (14, '123', 1, NULL, NULL);
 INSERT INTO `college` VALUES (27, '信息学院', 0, NULL, NULL);
+INSERT INTO `college` VALUES (28, '321', 1, NULL, NULL);
+INSERT INTO `college` VALUES (29, '123', 1, NULL, NULL);
+INSERT INTO `college` VALUES (30, '333', 1, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for education_experience_audit
@@ -342,7 +368,7 @@ CREATE TABLE `office`  (
   `test1` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test1',
   `test2` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test2',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 84 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '教研室' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 89 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '教研室' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of office
@@ -388,8 +414,13 @@ INSERT INTO `office` VALUES (39, '', 2, 1, NULL, NULL);
 INSERT INTO `office` VALUES (40, 'mks学习小组', 7, 0, NULL, NULL);
 INSERT INTO `office` VALUES (80, '234', 1, 1, NULL, NULL);
 INSERT INTO `office` VALUES (81, '234', 1, 0, NULL, NULL);
-INSERT INTO `office` VALUES (82, '111', 1, 0, NULL, NULL);
+INSERT INTO `office` VALUES (82, '112', 1, 0, NULL, NULL);
 INSERT INTO `office` VALUES (83, '信息办公室', 27, 0, NULL, NULL);
+INSERT INTO `office` VALUES (84, '123', 2, 0, NULL, NULL);
+INSERT INTO `office` VALUES (85, '243', 7, 1, NULL, NULL);
+INSERT INTO `office` VALUES (86, '234', 7, 0, NULL, NULL);
+INSERT INTO `office` VALUES (87, '111', 1, 1, NULL, NULL);
+INSERT INTO `office` VALUES (88, '333', 30, 1, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for project_audit
@@ -446,7 +477,7 @@ CREATE TABLE `request_college_change`  (
   `zw_delete_roles` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '删除角色',
   `zw_deleted` int NULL DEFAULT 0 COMMENT '逻辑删除',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 16 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '变更学院申请' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 17 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_0900_ai_ci COMMENT = '变更学院申请' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of request_college_change
@@ -465,6 +496,7 @@ INSERT INTO `request_college_change` VALUES (12, 100019, 200006, 1, NULL, 4, '12
 INSERT INTO `request_college_change` VALUES (13, 100045, 200006, 1, NULL, 2, '123', NULL, '2024-04-28 15:31:44', NULL, 0, ',', 0);
 INSERT INTO `request_college_change` VALUES (14, 100023, 200006, 1, 200005, 2, '123', '已知晓相关情况，同意转入！', '2024-04-28 20:42:27', '2024-04-29 21:04:15', 1, ',', 0);
 INSERT INTO `request_college_change` VALUES (15, 100016, 200006, 1, NULL, 2, '申请换入电气！', NULL, '2024-04-29 16:44:02', NULL, 0, ',', 0);
+INSERT INTO `request_college_change` VALUES (16, 100001, 200006, 1, NULL, 2, NULL, NULL, '2024-05-11 08:58:51', NULL, 0, ',', 1);
 
 -- ----------------------------
 -- Table structure for role
@@ -511,13 +543,14 @@ CREATE TABLE `software_audit`  (
   `test3` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test3',
   `tset4` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT 'test4',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 3 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '软件著作审核' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 4 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '软件著作审核' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of software_audit
 -- ----------------------------
 INSERT INTO `software_audit` VALUES (1, 100001, '<软件著作名称>', '已发布', 1, '2023-06-28', 3, NULL, 1, '2024-03-01 14:18:32', '2024-04-17 14:18:42', 200006, '教师备注000', '管理员备注111', 1, ',', 0, NULL, NULL);
 INSERT INTO `software_audit` VALUES (2, 100011, '11', '1', 1, '2024-01-09', 1111, NULL, 0, '2024-01-11 00:58:06', NULL, NULL, '111', NULL, 0, ',', 0, NULL, NULL);
+INSERT INTO `software_audit` VALUES (3, 100001, 'rjzz', '申请准备阶段', 0, '2024-02-06', 3, NULL, 0, '2024-05-10 15:41:07', NULL, NULL, '1', NULL, 0, ',', 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for super_admin
@@ -566,20 +599,20 @@ CREATE TABLE `teacher`  (
   `test3` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备用3',
   `test4` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci NULL DEFAULT NULL COMMENT '备用4',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 100049 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '教师(用户)' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 100053 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '教师(用户)' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of teacher
 -- ----------------------------
-INSERT INTO `teacher` VALUES (100001, 20210300000, 'xiaotian11', 'xiaotian', '$2a$10$k013Pn29b2.Xsm.xey.U4.3CEUVboYagCRMDPhuLr4P7IYh53Ylv.', 1, '回族', '湖南', '湖南长沙天心区', '15345678123', 1, 1, '研究生', '中共党员', '430000000000000000', 1, '2023-10-31', '2023-04-06', 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100001, 20210300000, 'xiaotian12', 'xiaotian', '$2a$10$ty14IGZsGOsqutpbJk9DL.ArXzqXhNBvXbe5IF8FVx6kKeJfpZxCK', 1, '汉族', '湖南', '湖南长沙天心区', '15345678121', 1, 1, '研究生', '中共党员', '430000000000000000', 1, '2023-10-31', '2023-04-06', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100002, 20210311111, '3老师', '3老师', '$2a$10$oXJF38ma673Rqod75EwBZeH94pvwRoPdgBapzxuVApFssp8.HRHM2', 1, '汉族', '广东', '广东广州', '15757994567', 1, 2, '大专', '群众', '430000000000000004', 1, '2024-01-11', '2022-08-01', 0, NULL, NULL);
-INSERT INTO `teacher` VALUES (100003, NULL, 'xiaotian111', 'xiaotian111', '$2a$10$VXtCuwtbYyWZLV5PqwtD6ObdNfgL4NxsgFfejzah0zYzYGg/yGjRO', 0, NULL, NULL, NULL, '15757994568', 1, 1, NULL, NULL, '430000000000000001', 1, '2022-12-09', '2023-05-17', 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100003, NULL, 'xiaotian111', 'xiaotian111', '$2a$10$VXtCuwtbYyWZLV5PqwtD6ObdNfgL4NxsgFfejzah0zYzYGg/yGjRO', 0, '汉族', '湖南省长沙市', '湖南省长沙市', '15757994568', 1, 1, '大专', '群众', '430000000000000001', 1, '2022-12-09', '2023-05-17', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100006, NULL, '小天222', 'xiaotian222', '$2a$10$OLzkSlDk.uEd3B3uAmhLvOSQFbrSYVnWTYyp.nC1yBcrKe7w80IEC', 1, '汉族', '汉族', '湖南', '15777773123', 2, 3, '本科', '群众', '430000000000000002', 1, '2022-12-09', '2022-10-12', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100008, NULL, '大哥', 'user1', '$2a$10$9hVplSi.GB4/wq6ckz1HBeQgZ6wJt/UwicKazzbftMHs9.rUfkMKe', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '430000000000000003', 1, '2023-03-02', '2023-04-12', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100010, NULL, '卧龙', 'user2', '$2a$10$GrLLD6BaBGqy..A/agxXf..NTo7hAbwcBSxBO80mssPkI5iQqdJHm', 1, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, '', 1, '2023-10-20', '2022-06-15', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100011, NULL, '小王', 'xiaowang', '$2a$10$mvr5fx9ObV0UMFa7eVY5VuqJRxQX.Z0CbM8Z7u03e9HURap2LPxQy', 1, '塔吉克族', '湖南永州', '湖南长沙', '15711111111', 1, 1, '博士', '共青团员', '', 0, '2024-04-29', '2023-01-18', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100012, NULL, NULL, '15711111111', '$2a$10$Ds0F8/wPV6Vsg2EfRBSlMup7xTflPShEqBmNIKqS1rWK477DvK0ti', NULL, NULL, NULL, NULL, '15712334566', 2, 3, NULL, NULL, NULL, 0, '2024-01-08', NULL, 1, NULL, NULL);
-INSERT INTO `teacher` VALUES (100013, NULL, '小张', '15722222222', '$2a$10$Gx8xR2QPhA/dnUeNaqJb5OBYRKs80CXb2i3uir.Ej3Zg2RRe8TSIm', 1, '汉族', '广东', '长沙', '15722222222', 1, 1, '研究生', NULL, NULL, 0, '2024-01-08', '2023-05-07', 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100013, NULL, '小张', '15722222222', '$2a$10$Gx8xR2QPhA/dnUeNaqJb5OBYRKs80CXb2i3uir.Ej3Zg2RRe8TSIm', 1, '汉族', '广东', '长沙', '15722222222', 1, 1, '研究生', '共青团员', NULL, 0, '2024-01-08', '2023-05-07', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100014, NULL, '小赵', '18721122232', '$2a$10$Gx8xR2QPhA/dnUeNaqJb5OBYRKs80CXb2i3uir.Ej3Zg2RRe8TSIm', 1, '汉族', NULL, NULL, '18721122232', 1, 2, '本科', NULL, NULL, 0, '2024-01-09', '2023-05-07', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100015, NULL, 'wxq', '18721122289', '$2a$10$Gx8xR2QPhA/dnUeNaqJb5OBYRKs80CXb2i3uir.Ej3Zg2RRe8TSIm', 1, '汉族', '湖南湘潭', '湖南长沙', '18721122289', 1, 2, '研究生', NULL, NULL, 0, '2024-01-09', '2022-05-18', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100016, NULL, 'abc', '18721122292', '$2a$10$Gx8xR2QPhA/dnUeNaqJb5OBYRKs80CXb2i3uir.Ej3Zg2RRe8TSIm', NULL, '汉族', '湖南', '福建', '18721122292', 1, 7, '研究生', NULL, NULL, 1, '2024-04-29', '2022-05-18', 0, NULL, NULL);
@@ -589,7 +622,7 @@ INSERT INTO `teacher` VALUES (100019, NULL, 'zaq', '15321122282', '$2a$10$Gx8xR2
 INSERT INTO `teacher` VALUES (100020, NULL, 'qqqq', '15321122289', '$2a$10$Gx8xR2QPhA/dnUeNaqJb5OBYRKs80CXb2i3uir.Ej3Zg2RRe8TSIm', 0, '汉族', '湖南张家界', '湖南长沙', '15321122389', 1, 7, '研究生', NULL, NULL, 0, '2024-01-09', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100021, NULL, NULL, '15321562289', '$2a$10$fuVM61J2rC.2iz7yCldp8eV2uURIpGwKtvLheBWXfYKjKpJiVFPGi', NULL, NULL, NULL, NULL, '15321562289', 1, 2, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100022, NULL, NULL, '15321562290', '$2a$10$p3ii4bKVGegcIZ.R.V92euK28NQ0yNoVXa7s2ohQJN6wzQXhWjtuK', NULL, NULL, NULL, NULL, '15321562290', 1, 7, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
-INSERT INTO `teacher` VALUES (100023, NULL, '1月11', '15321562291', '$2a$10$y8yRA0ZQWOLTFU8prYx/qe/XlyXO8rPHBb51C8AKKNhgXvFKO.TNC', 1, '汉族', '湖南长沙', '湖南长沙', '15321562291', 2, 0, '大专', '共青团员', NULL, 0, '2024-04-28', NULL, 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100023, NULL, '1月11', '15321562291', '$2a$10$y8yRA0ZQWOLTFU8prYx/qe/XlyXO8rPHBb51C8AKKNhgXvFKO.TNC', 1, '汉族', '湖南长沙', '湖南长沙', '15321562291', 2, 3, '大专', '共青团员', NULL, 0, '2024-04-28', NULL, 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100024, NULL, NULL, '18121562289', '$2a$10$9MGWbJU3kbBUUirFfC2JHO15WmyGK1lG1vdw7DeRvi9GnNm4SZMmG', NULL, NULL, NULL, NULL, '18121562289', 1, 2, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100025, NULL, NULL, '18121562290', '$2a$10$w8JY1YEJLfz41b8mhecLp.VGGKppC7e9qg2UBpkb5JEWygO2TOebi', NULL, NULL, NULL, NULL, '18121562290', 1, 7, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100026, NULL, NULL, '18121562291', '$2a$10$LULbPdO5IQ1j4.0MtBlKIeUTalYROQh/guTvreavkCiT18hP0a51a', NULL, NULL, NULL, NULL, '18121562291', 1, 7, NULL, NULL, '430000000000000006', 0, '2024-01-11', NULL, 1, NULL, NULL);
@@ -609,12 +642,16 @@ INSERT INTO `teacher` VALUES (100039, NULL, NULL, '12423792410', '$2a$10$XTHMujT
 INSERT INTO `teacher` VALUES (100040, NULL, NULL, '12423792418', '$2a$10$XnCRTnw5oxY8YRDj0hVMLeID4tZ6RxBArXu0KN3zE0ivgNLS1D6ry', NULL, NULL, NULL, NULL, '12423792418', 1, 7, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100041, NULL, NULL, '12423792457', '$2a$10$KTEldogMU0f1JYVNjC5a3O6ofFvWOXksPcJrGVPwkh4u4i5RrWzjO', NULL, NULL, NULL, NULL, '12423792457', 1, 2, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100042, NULL, NULL, '12423792456', '$2a$10$fbjDNsRhEVbly8fwuToPmubH.ufcWXB.sqgW5NrJ.iBq/Y2msKlx6', NULL, NULL, NULL, NULL, '12423792456', 1, 7, NULL, NULL, NULL, 0, '2024-01-11', NULL, 1, NULL, NULL);
-INSERT INTO `teacher` VALUES (100043, NULL, '李四', '15711110000', '$2a$10$2tNk0ZWGgNazkFDPYmNyTePGE7JY0ToJJQ3K2ui1aZuBd5rIHpv6a', NULL, NULL, NULL, NULL, '15711110000', 1, 1, NULL, NULL, NULL, 0, '2024-01-11', NULL, 0, NULL, NULL);
-INSERT INTO `teacher` VALUES (100044, NULL, '张三', '15711110001', '$2a$10$HKS/1SBywoYO7D2efwTQWOlmSF0KcsPlhJJFNMFpub6vkHTzwAa8e', NULL, NULL, NULL, NULL, '15711110001', 1, 0, NULL, NULL, NULL, 0, '2024-01-11', NULL, 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100043, NULL, '李四', '15711110000', '$2a$10$2tNk0ZWGgNazkFDPYmNyTePGE7JY0ToJJQ3K2ui1aZuBd5rIHpv6a', 0, '布朗族', '湖南省长沙市', '湖南省长沙市', '15711110000', 1, 1, '本科', '群众', '430000000000000011', 0, '2024-01-11', '2022-06-30', 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100044, NULL, '张三', '15711110001', '$2a$10$HKS/1SBywoYO7D2efwTQWOlmSF0KcsPlhJJFNMFpub6vkHTzwAa8e', 0, '阿昌族', '湖南省长沙市', '湖南省长沙市', '15711110001', 1, 1, '高中', '群众', '430000000000000012', 1, '2023-05-17', '2022-05-24', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100045, 202103160111, '曾老师', '15711111122', '$2a$10$LsYgDn0aPW1a3BH8V6.y2OS0YOwTgHGaAREZbcEPzp4GGn1ocmCI6', 1, '柯尔克孜族', '湖南省长沙市', '湖南省长沙市', '15711114444', 1, 1, '大专', '共青团员', NULL, 0, '2024-04-28', '2023-05-07', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100046, 202103160112, '小天', '15722222211', '$2a$10$ravt/VZ5S9DrmrQHaLGRC.pLztXLMG0Ry4HbxPYfc9HK.ppVasHqK', NULL, NULL, NULL, NULL, '15722222211', 1, 2, NULL, NULL, NULL, 0, '2024-04-28', NULL, 1, NULL, NULL);
 INSERT INTO `teacher` VALUES (100047, 202103161234, '曾老师', '15711111234', '$2a$10$0GRO3tBlemYlQDLaySPZsuw98XXIHTBaMfCkv3U90f/33noTEPrXa', 0, '景颇族', '广东省广州市', '湖南省长沙', '15711111234', 1, 1, '大专', '群众', NULL, 0, '2024-04-29', '2023-05-07', 0, NULL, NULL);
 INSERT INTO `teacher` VALUES (100048, 202103161235, '小天', '15711111235', '$2a$10$kWs/bppmJFTwKNn7SZyMhuPYYUa696htJ4RWHVW6Vzx.TlTAYuXDK', NULL, NULL, NULL, NULL, '15711111235', 1, 2, NULL, NULL, NULL, 0, '2024-04-28', NULL, 1, NULL, NULL);
+INSERT INTO `teacher` VALUES (100049, 20210312347, 'x老师', '18888888871', '$2a$10$Xmf7W6/2PDuRvgeLLdXTQueNK.nrvNfE5c3hDI.5TAIyKMJDqvqge', 1, '汉族', '湖南省长沙市', '湖南省长沙市', '18888888871', 1, 1, '本科', '群众', '430000000000000013', 0, '2024-05-10', '2023-05-31', 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100050, 20210312348, 'y老师', '18888888891', '$2a$10$pOeSPBtSk2/slE6NqxaYpeu7Vp2FSpowUBCumqTIeWAmRZ1TLVAHa', NULL, NULL, NULL, NULL, '18888888891', 1, 2, NULL, NULL, NULL, 0, '2024-05-10', NULL, 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100051, 20210312349, 'x老师', '18888888887', '$2a$10$CaO6YwRvq1TP2UIbzrInp.ldppITG7Y19jWFPG3YiVC9s.m5ErAlW', NULL, NULL, NULL, NULL, '18888888887', 1, 23, NULL, NULL, NULL, 0, '2024-05-11', NULL, 0, NULL, NULL);
+INSERT INTO `teacher` VALUES (100052, 20210312350, 'y老师', '18888888889', '$2a$10$cy5JMU4m3gnwgMoQaX5ZX.ZWGzg5Dim93j4/VkKDboZltmti86Gr2', NULL, NULL, NULL, NULL, '18888888889', 1, 2, NULL, NULL, NULL, 0, '2024-05-11', NULL, 0, NULL, NULL);
 
 -- ----------------------------
 -- Table structure for teacher_role
@@ -626,7 +663,7 @@ CREATE TABLE `teacher_role`  (
   `zw_rid` bigint NULL DEFAULT NULL COMMENT '职务id',
   `deleted` int NULL DEFAULT 0 COMMENT '逻辑删除 0:未删除 1:删除',
   PRIMARY KEY (`zw_id`) USING BTREE
-) ENGINE = InnoDB AUTO_INCREMENT = 311 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '教师-职务关系表' ROW_FORMAT = DYNAMIC;
+) ENGINE = InnoDB AUTO_INCREMENT = 347 CHARACTER SET = utf8mb4 COLLATE = utf8mb4_general_ci COMMENT = '教师-职务关系表' ROW_FORMAT = DYNAMIC;
 
 -- ----------------------------
 -- Records of teacher_role
@@ -636,14 +673,8 @@ INSERT INTO `teacher_role` VALUES (32, 100027, 3, 0);
 INSERT INTO `teacher_role` VALUES (47, 100002, 3, 0);
 INSERT INTO `teacher_role` VALUES (90, 100012, 3, 0);
 INSERT INTO `teacher_role` VALUES (98, 100006, 3, 0);
-INSERT INTO `teacher_role` VALUES (104, 100044, 3, 0);
 INSERT INTO `teacher_role` VALUES (193, 100020, 2, 0);
-INSERT INTO `teacher_role` VALUES (246, 100011, 4, 0);
 INSERT INTO `teacher_role` VALUES (252, 100048, 3, 0);
-INSERT INTO `teacher_role` VALUES (259, 100023, 2, 0);
-INSERT INTO `teacher_role` VALUES (260, 100023, 3, 0);
-INSERT INTO `teacher_role` VALUES (280, 100013, 2, 0);
-INSERT INTO `teacher_role` VALUES (281, 100013, 3, 0);
 INSERT INTO `teacher_role` VALUES (282, 100045, 2, 0);
 INSERT INTO `teacher_role` VALUES (283, 100047, 3, 0);
 INSERT INTO `teacher_role` VALUES (284, 100014, 2, 0);
@@ -651,8 +682,21 @@ INSERT INTO `teacher_role` VALUES (285, 100015, 2, 0);
 INSERT INTO `teacher_role` VALUES (286, 100018, 2, 0);
 INSERT INTO `teacher_role` VALUES (287, 100016, 1, 0);
 INSERT INTO `teacher_role` VALUES (288, 100019, 2, 0);
-INSERT INTO `teacher_role` VALUES (309, 100001, 1, 0);
-INSERT INTO `teacher_role` VALUES (310, 100001, 2, 0);
+INSERT INTO `teacher_role` VALUES (329, 100049, 2, 0);
+INSERT INTO `teacher_role` VALUES (330, 100051, 1, 0);
+INSERT INTO `teacher_role` VALUES (331, 100001, 1, 0);
+INSERT INTO `teacher_role` VALUES (332, 100001, 2, 0);
+INSERT INTO `teacher_role` VALUES (333, 100003, 1, 0);
+INSERT INTO `teacher_role` VALUES (334, 100003, 2, 0);
+INSERT INTO `teacher_role` VALUES (338, 100043, 2, 0);
+INSERT INTO `teacher_role` VALUES (339, 100044, 1, 0);
+INSERT INTO `teacher_role` VALUES (340, 100044, 2, 0);
+INSERT INTO `teacher_role` VALUES (341, 100013, 1, 0);
+INSERT INTO `teacher_role` VALUES (342, 100013, 2, 0);
+INSERT INTO `teacher_role` VALUES (343, 100011, 1, 0);
+INSERT INTO `teacher_role` VALUES (344, 100011, 2, 0);
+INSERT INTO `teacher_role` VALUES (345, 100023, 1, 0);
+INSERT INTO `teacher_role` VALUES (346, 100023, 2, 0);
 
 -- ----------------------------
 -- Table structure for topic_audit

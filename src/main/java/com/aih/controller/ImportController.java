@@ -223,6 +223,10 @@ public class ImportController {
                 if (StrUtil.isBlank(officeName1)){
                     throw new CustomException(1092,"办公室名称不能为空");
                 }
+                //手机号格式
+                if (!phone.matches("1[3-9]\\d{9}")){
+                    throw new CustomException(1090,"手机号格式不正确");
+                }
                 //判断重复
                 if (teacherService.checkUsernameExist(phone)) {
                     throw new CustomException(1090,"手机号"+phone+"已经存在");

@@ -290,7 +290,14 @@ public class SuperAdminController {
         queryWrapper.eq(Teacher::getCid,id);
         long count = teacherService.count(queryWrapper);
         if (count!=0) {
-            throw new CustomException(CustomExceptionCodeMsg.COLLEGE_DELETE_ERROR);
+            throw new CustomException(CustomExceptionCodeMsg.COLLEGE_DELETE_ERROR_TEACHER);
+        }
+        //如果该学院下有隶属办公室也不可以删
+        LambdaQueryWrapper<Office> queryWrapper_office = new LambdaQueryWrapper<>();
+        queryWrapper_office.eq(Office::getCid,id);
+        long count_office = officeService.count(queryWrapper_office);
+        if (count_office!=0) {
+            throw new CustomException(CustomExceptionCodeMsg.COLLEGE_DELETE_ERROR_OFFICE);
         }
         collegeService.removeById(id);
         return R.success("删除成功");

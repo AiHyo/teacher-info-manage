@@ -10,10 +10,11 @@ spring:
 ip: localhost
 
 
-# 文件存储路径
+# 附件文件在服务器的存储路径！！！【部署在新的服务器上需要更改您的路径】
 file:
   root-path: D:\idea\2023\files   # 根路径
   temporary-path: D:\idea\2023\files\temporary  # 临时目录
+
 #  template-file-word: classpath:template/TemplateTeacherInfo.docx  # word模板文件
 #  template-file-excel-superadmin: classpath:template/SuperAdminImport.xlsx # excel模板文件
 #  template-file-excel-admin: classpath:template/AdminImport.xlsx # excel模板文件

@@ -45,7 +45,7 @@ public enum CustomExceptionCodeMsg {
     ISAUDITOR_ILLEGAL(1061, "isAuditor参数非法,只能允许0或者1"),
     AUDIT_STATUS_ILLEGAL(1062, "auditStatus参数非法,只能允许0或者1或者2"),
     CID_ILLEGAL(1063, "cid非法,请确认学院id是否存在"),
-    COLLEGE_DELETE_ERROR(1070, "学院删除失败,有教师隶属该学院"),
+    COLLEGE_DELETE_ERROR_TEACHER(1070, "学院删除失败,有教师隶属该学院"),
     OFFICE_DELETE_ERROR(1071, "教研室删除失败,有教师隶属该办公室"),
 
     FILE_NOT_FOUND(2001, "系统找不到指定路径"),
@@ -80,7 +80,7 @@ public enum CustomExceptionCodeMsg {
     POLITICS_STATUS_ILLEGAL(1097, "请选择正确的政治面貌"),
     ID_NUMBER_FORMAT_ERROR(1098, "身份证号格式错误"),
     DESK_ID_FORMAT_ERROR(1099, "工位号只能填写数字哦"),
-    ;
+    COLLEGE_DELETE_ERROR_OFFICE(1070, "学院删除失败,有办公室隶属该学院"),;
 
 
 
